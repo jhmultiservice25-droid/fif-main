@@ -111,6 +111,13 @@ export const NAVIGATION: NavigationItem[] = [
         activeOptions: { exact: false }
       },
       {
+        id: 'innovators',
+        label: 'Innovateurs',
+        icon: 'users',
+        route: '/innovateurs',
+        activeOptions: { exact: false }
+      },
+      {
         id: 'projects',
         label: 'Projets',
         icon: 'lightbulb',

@@ -4,10 +4,10 @@ Platform for the **FIKIRI Innovation Festival 2026** (Kinshasa, 25–27 November
 
 pnpm + Turborepo monorepo with two apps:
 
-| App               | Path          | Stack                          | README                         |
-| ----------------- | ------------- | ------------------------------- | ------------------------------- |
-| `server`          | `apps/server` | NestJS 11, Prisma 6, PostgreSQL | [apps/server/README.md](apps/server/README.md) |
-| `web`             | `apps/web`    | Angular 22, SSR                 | [apps/web/README.md](apps/web/README.md)       |
+| App | Path | Stack | README |
+|---|---|---|---|
+| `server` | `apps/server` | NestJS 11, Prisma 6, PostgreSQL | [apps/server/README.md](apps/server/README.md) |
+| `web` | `apps/web` | Angular 22, SSR | [apps/web/README.md](apps/web/README.md) |
 
 ## Requirements
 
@@ -26,12 +26,12 @@ cp apps/server/.env.example apps/server/.env
 
 Run from the repo root; each also has a `:server` / `:web` variant to target one app.
 
-| Command         | Description                                  |
-| --------------- | --------------------------------------------- |
-| `pnpm dev`      | Run both apps in watch mode                   |
-| `pnpm build`    | Build both apps                               |
-| `pnpm lint`     | Lint both apps                                |
-| `pnpm typecheck`| Type-check both apps                          |
+| Command | Description |
+|---|---|
+| `pnpm dev` | Run both apps in watch mode |
+| `pnpm build` | Build both apps |
+| `pnpm lint` | Lint both apps |
+| `pnpm typecheck` | Type-check both apps |
 
 Example: `pnpm dev:server`, `pnpm build:web`.
 
@@ -46,7 +46,7 @@ Both compose files live at the repo root (`compose.dev.yml`, `compose.prod.yml`)
 
 ## Structure
 
-```
+```text
 apps/
   server/   NestJS API (recruitment, auth, marketplace, admin)
   web/      Angular frontend (public site, org/innovator/admin spaces)

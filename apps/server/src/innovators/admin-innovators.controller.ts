@@ -47,6 +47,51 @@ export class AdminInnovatorsController {
       });
     }
 
+    const submissionsSheet = workbook.addWorksheet("Soumissions");
+    submissionsSheet.columns = [
+      { header: "Innovateur", key: "innovator", width: 30 },
+      { header: "E-mail", key: "email", width: 34 },
+      { header: "Téléphone / WhatsApp", key: "phone", width: 24 },
+      { header: "Organisation", key: "organization", width: 28 },
+      { header: "Ville", key: "city", width: 18 },
+      { header: "Titre de la soumission", key: "title", width: 34 },
+      { header: "Statut", key: "status", width: 18 },
+      { header: "Problème traité", key: "problemSolved", width: 42 },
+      { header: "Solution proposée", key: "solution", width: 48 },
+      { header: "Secteurs", key: "sectors", width: 28 },
+      { header: "Stade", key: "stage", width: 20 },
+      { header: "Date de soumission", key: "createdAt", width: 22 },
+      { header: "Dernière mise à jour", key: "updatedAt", width: 22 },
+    ];
+
+    for (const profile of profiles) {
+      for (const project of profile.projects) {
+        submissionsSheet.addRow({
+          innovator: profile.displayName || "",
+          email: profile.email || "",
+          phone: profile.phone || "",
+          organization: profile.organization || "",
+          city: profile.city || "",
+          title: project.title || "",
+          status: project.status || "",
+          problemSolved: project.problemSolved || "",
+          solution: project.solution || "",
+          sectors: project.sectors.join(" ; "),
+          stage: project.stage || "",
+          createdAt: project.createdAt,
+          updatedAt: project.updatedAt,
+        });
+      }
+    }
+
+    const submissionsHeader = submissionsSheet.getRow(1);
+    submissionsHeader.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    submissionsHeader.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF006DA4" } };
+    submissionsHeader.alignment = { vertical: "middle", wrapText: true };
+    submissionsHeader.height = 28;
+    submissionsSheet.views = [{ state: "frozen", ySplit: 1 }];
+    submissionsSheet.autoFilter = { from: "A1", to: "M1" };
+
     const header = sheet.getRow(1);
     header.font = { bold: true, color: { argb: "FFFFFFFF" } };
     header.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF006DA4" } };

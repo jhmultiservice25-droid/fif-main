@@ -116,8 +116,14 @@ export class InnovatorsService {
   }
 
   async adminExportInnovators() {
+    // No date or status filter: include every existing profile and every linked
+    // submission, including historical drafts and archived workflow states.
     return this.prisma.innovatorProfile.findMany({
-      include: { projects: { select: { title: true, status: true } } },
+      include: {
+        projects: {
+          orderBy: { createdAt: "asc" },
+        },
+      },
       orderBy: [{ displayName: "asc" }, { createdAt: "asc" }],
     });
   }

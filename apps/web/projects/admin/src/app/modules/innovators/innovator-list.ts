@@ -37,6 +37,10 @@ export default class InnovatorList {
     this.pageSize.set(event.pageSize);
   }
 
+  protected projectTitles(projects: IAdminInnovatorListItem['projects']): string {
+    return projects.map((project) => project.title).filter(Boolean).join(', ');
+  }
+
   protected formatDate(value: string): string {
     return new Intl.DateTimeFormat('fr-CD', { dateStyle: 'medium' }).format(new Date(value));
   }

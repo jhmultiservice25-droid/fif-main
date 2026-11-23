@@ -1,0 +1,182 @@
+<div class="min-h-dvh bg-gray-50 pt-24 pb-16">
+  <div class="mx-auto max-w-3xl px-5 sm:px-8">
+    <p class="text-sm font-semibold tracking-[0.2em] text-primary-700 uppercase">FIF 2026</p>
+    <h1 class="mt-3 text-3xl font-bold tracking-tight text-gray-950 sm:text-4xl">Politique de confidentialité</h1>
+    <p class="mt-2 text-gray-600">Dernière mise à jour : {{ updatedAt }}</p>
+
+    <div class="mt-10 space-y-10 text-gray-700">
+      <section>
+        <h2 class="text-xl font-semibold text-gray-950">Qui sommes-nous</h2>
+        <p class="mt-3">
+          Ce site est celui du <strong>FIKIRI Innovation Festival (FIF 2026)</strong>, organisé à Kinshasa, en
+          République démocratique du Congo. Il sert à présenter le programme, à inscrire les participants, à
+          recueillir les candidatures et à mettre en avant les solutions des innovateurs congolais.
+        </p>
+        <p class="mt-3">
+          Pour toute question sur vos données, écrivez-nous à
+          <a class="font-medium text-primary-700 underline" href="mailto:{{ contactEmail }}">{{ contactEmail }}</a>.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-semibold text-gray-950">Ce que nous collectons</h2>
+        <p class="mt-3">Nous ne collectons que ce que vous nous transmettez vous-même, selon ce que vous faites sur le site.</p>
+
+        <dl class="mt-5 space-y-5">
+          <div>
+            <dt class="font-medium text-gray-950">Inscription aux activités du festival</dt>
+            <dd class="mt-1 text-sm">
+              Nom, post-nom, prénom, ville, numéro WhatsApp, adresse e-mail, organisation (facultative), ainsi que les
+              journées et activités que vous choisissez.
+            </dd>
+          </div>
+          <div>
+            <dt class="font-medium text-gray-950">Accès à votre espace personnel</dt>
+            <dd class="mt-1 text-sm">
+              Votre adresse e-mail et un code à usage unique envoyé par message. Nous conservons aussi la date, l'adresse
+              IP et le navigateur de vos connexions, pour la sécurité du compte. Il n'y a pas de mot de passe à retenir.
+            </dd>
+          </div>
+          <div>
+            <dt class="font-medium text-gray-950">Profil et projets des innovateurs</dt>
+            <dd class="mt-1 text-sm">
+              Nom affiché, organisation, ville, téléphone, e-mail, photo de profil, description de vos projets ou
+              solutions et, si vous en déposez une, votre vidéo de présentation.
+            </dd>
+          </div>
+          <div>
+            <dt class="font-medium text-gray-950">Candidatures (comité d'organisation, volontariat)</dt>
+            <dd class="mt-1 text-sm">
+              Identité, sexe, date de naissance, ville, numéro WhatsApp, adresse e-mail, postes visés et votre
+              motivation.
+            </dd>
+          </div>
+          <div>
+            <dt class="font-medium text-gray-950">Mise en relation avec un porteur de projet</dt>
+            <dd class="mt-1 text-sm">
+              Votre nom, votre e-mail, votre organisation et votre message. Nous transmettons le message au porteur
+              concerné et gardons une trace de l'envoi.
+            </dd>
+          </div>
+          <div>
+            <dt class="font-medium text-gray-950">Badge d'accès</dt>
+            <dd class="mt-1 text-sm">
+              Votre nom et votre e-mail, associés à un code unique qui permet de valider votre entrée sur place.
+            </dd>
+          </div>
+        </dl>
+
+        <p class="mt-5 text-sm">
+          Nous ne demandons jamais de données bancaires, et nous ne collectons aucune donnée sensible (santé, opinions
+          politiques, religion, appartenance syndicale).
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-semibold text-gray-950">À quoi servent ces informations</h2>
+        <ul class="mt-3 list-disc space-y-2 pl-5">
+          <li>Gérer votre inscription, vos places dans les activités et votre badge d'accès.</li>
+          <li>Vous écrire au sujet du festival : confirmation, rappel, changement d'horaire, résultat de candidature.</li>
+          <li>Étudier les candidatures et les solutions soumises.</li>
+          <li>Mettre en relation les porteurs de projets avec les partenaires qui les contactent.</li>
+          <li>Comprendre comment le site est utilisé, pour l'améliorer.</li>
+        </ul>
+        <p class="mt-3">
+          Nous n'utilisons pas vos données à des fins publicitaires et nous ne les vendons à personne.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-semibold text-gray-950">Mesure d'audience et cookies</h2>
+        <p class="mt-3">
+          Nous utilisons Google Analytics pour savoir combien de personnes visitent le site et quelles pages les
+          intéressent. La publicité et le partage de données publicitaires sont désactivés de façon permanente, et les
+          adresses IP sont anonymisées.
+        </p>
+        <ul class="mt-3 list-disc space-y-2 pl-5">
+          <li>
+            <strong>Si vous n'autorisez pas le cookie de mesure</strong> — et c'est le réglage par défaut — la mesure
+            reste anonyme : aucun fichier n'est déposé sur votre appareil, aucun identifiant n'est conservé, et la visite
+            ne peut être rattachée à personne.
+          </li>
+          <li>
+            <strong>Si vous l'autorisez</strong>, un cookie de mesure est déposé. Il nous permet en plus de distinguer
+            une nouvelle visite d'une visite de retour.
+          </li>
+        </ul>
+        <p class="mt-3">
+          Les autres cookies du site sont strictement techniques : celui qui vous garde connecté à votre espace, et un
+          réglage conservé dans votre navigateur pour se souvenir de votre choix ci-dessus.
+        </p>
+        <p class="mt-4">
+          <button
+            type="button"
+            class="cursor-pointer rounded-full border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-800 transition hover:bg-gray-50"
+            (click)="analytics.decline()">
+            Désactiver le cookie de mesure
+          </button>
+        </p>
+        <p class="mt-2 text-sm text-gray-500">
+          Vous pouvez aussi rouvrir vos préférences à tout moment depuis l'icône en bas à gauche de chaque page.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-semibold text-gray-950">Qui peut y accéder</h2>
+        <p class="mt-3">
+          Seule l'équipe d'organisation du festival consulte ces informations, et uniquement pour les usages décrits
+          ci-dessus. Nous faisons appel à deux prestataires techniques :
+        </p>
+        <ul class="mt-3 list-disc space-y-2 pl-5">
+          <li><strong>Resend</strong> — envoi de nos e-mails (votre adresse et le contenu du message lui sont transmis).</li>
+          <li><strong>Google Analytics</strong> — mesure d'audience, dans les conditions décrites plus haut.</li>
+        </ul>
+        <p class="mt-3">
+          Les informations que vous publiez volontairement sur une fiche de solution ou de projet sont, elles, visibles
+          publiquement : c'est l'objet même du catalogue.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-semibold text-gray-950">Combien de temps nous les gardons</h2>
+        <p class="mt-3">
+          Les inscriptions, candidatures et badges sont conservés le temps de préparer et de tenir l'édition 2026, puis
+          pendant la période nécessaire au bilan du festival. Votre espace personnel et les solutions publiées restent
+          disponibles tant que vous ne demandez pas leur suppression. Les statistiques d'audience sont conservées sous
+          forme agrégée.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-semibold text-gray-950">Vos droits</h2>
+        <p class="mt-3">
+          Vous pouvez à tout moment demander à consulter vos données, à les corriger, à les faire supprimer, ou retirer
+          votre inscription à une activité. La plupart de ces actions sont possibles directement depuis
+          <a routerLink="/mon-espace" class="font-medium text-primary-700 underline">votre espace</a>.
+        </p>
+        <p class="mt-3">
+          Pour le reste, écrivez à
+          <a class="font-medium text-primary-700 underline" href="mailto:{{ contactEmail }}">{{ contactEmail }}</a> :
+          nous répondons dans un délai raisonnable, et la suppression est définitive.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-semibold text-gray-950">Sécurité</h2>
+        <p class="mt-3">
+          Les échanges avec le site sont chiffrés. L'accès à votre espace se fait par un code à usage unique, valable
+          quelques minutes et limité à un petit nombre de tentatives. L'accès aux données d'organisation est réservé aux
+          membres habilités de l'équipe.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-semibold text-gray-950">Modifications</h2>
+        <p class="mt-3">
+          Cette politique peut évoluer si le festival ajoute de nouveaux services. La date de mise à jour en haut de page
+          indique toujours la version en vigueur.
+        </p>
+      </section>
+    </div>
+  </div>
+</div>

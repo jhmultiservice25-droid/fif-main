@@ -1,0 +1,76 @@
+<div class="px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
+  <div class="mb-6">
+    <h1 class="text-3xl font-semibold tracking-tight">Profil innovateur</h1>
+    <p class="mt-1 text-neutral-500">Ces informations sont présentées aux organisations de la marketplace.</p>
+  </div>
+
+  @if (profileResource.isLoading() && !profileResource.hasValue()) {
+    <div class="flex justify-center py-16">
+      <mat-progress-spinner mode="indeterminate" diameter="36" />
+    </div>
+  } @else {
+    <form
+      class="max-w-5xl divide-y divide-gray-200 border-t border-gray-200"
+      (submit)="saveProfile(); $event.preventDefault()">
+      <section class="grid gap-x-10 gap-y-4 py-8 lg:grid-cols-[16rem_1fr]">
+        <div>
+          <h2 class="font-semibold text-gray-950">Photo de profil</h2>
+          <p class="mt-1 text-sm text-neutral-500">Un visage ou le logo de votre équipe.</p>
+        </div>
+        <app-image-upload
+          endpoint="/me/innovator/photo"
+          field="photo"
+          [imageUrl]="profileResource.value()?.data?.photoUrl"
+          [fallback]="initials()" />
+      </section>
+
+      <section class="grid gap-x-10 gap-y-4 py-8 lg:grid-cols-[16rem_1fr]">
+        <div>
+          <h2 class="font-semibold text-gray-950">Identité</h2>
+          <p class="mt-1 text-sm text-neutral-500">Le nom affiché sur vos projets et votre badge.</p>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2">
+          <mat-form-field appearance="outline">
+            <mat-label>Nom d’affichage</mat-label>
+            <input matInput [formField]="profileForm.displayName" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Organisation (optionnel)</mat-label>
+            <input matInput [formField]="profileForm.organization" />
+          </mat-form-field>
+        </div>
+      </section>
+
+      <section class="grid gap-x-10 gap-y-4 py-8 lg:grid-cols-[16rem_1fr]">
+        <div>
+          <h2 class="font-semibold text-gray-950">Coordonnées</h2>
+          <p class="mt-1 text-sm text-neutral-500">Pour que l'équipe FIF et les organisations puissent vous joindre.</p>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2">
+          <mat-form-field appearance="outline">
+            <mat-label>Ville</mat-label>
+            <input matInput [formField]="profileForm.city" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Téléphone</mat-label>
+            <input matInput type="tel" [formField]="profileForm.phone" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="md:col-span-2">
+            <mat-label>E-mail de contact</mat-label>
+            <input matInput type="email" [formField]="profileForm.email" />
+          </mat-form-field>
+        </div>
+      </section>
+
+      <div class="flex justify-end py-6">
+        <button matButton="filled" type="submit" [disabled]="store.isSaving() || profileForm().invalid()">
+          <mat-icon [class.animate-spin]="store.isSaving()" [svgIcon]="store.isSaving() ? 'loader-circle' : 'check'" />
+          Enregistrer
+        </button>
+      </div>
+    </form>
+  }
+</div>

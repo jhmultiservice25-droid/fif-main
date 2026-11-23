@@ -1,0 +1,100 @@
+<div class="px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
+  <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="text-3xl font-semibold tracking-tight">Participants</h1>
+      <p class="mt-1 text-neutral-500">Inscriptions grand public au festival et état de leur e-mail de badge.</p>
+    </div>
+    @if (participantsResource.hasValue()) {
+      <div class="flex items-center gap-3 text-sm">
+        <span class="rounded-full bg-primary-50 px-3 py-1.5 font-medium text-primary-800">{{ total() }} inscrit(s)</span>
+        @if (pendingOnPage()) {
+          <span class="rounded-full bg-amber-50 px-3 py-1.5 font-medium text-amber-800">
+            {{ pendingOnPage() }} e-mail(s) en attente sur cette page
+          </span>
+        }
+      </div>
+    }
+  </div>
+
+  @if (participantsResource.isLoading()) {
+    <mat-card appearance="outlined" class="flex min-h-72 items-center justify-center">
+      <div class="animate-pulse text-neutral-500">Chargement des participants…</div>
+    </mat-card>
+  } @else if (!participants().length) {
+    <div class="flex flex-col items-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
+      <mat-icon class="text-gray-400" svgIcon="ticket" />
+      <p class="mt-3 font-medium text-gray-700">Aucun participant inscrit pour le moment</p>
+      <p class="mt-1 text-sm text-gray-500">Les inscriptions faites depuis « Participer » apparaîtront ici.</p>
+    </div>
+  } @else {
+    <mat-card appearance="outlined" class="overflow-hidden">
+      <div class="overflow-x-auto">
+        <table mat-table [dataSource]="participants()">
+          <ng-container matColumnDef="participant">
+            <th mat-header-cell *matHeaderCellDef>Participant</th>
+            <td mat-cell *matCellDef="let row">
+              <div class="py-2">
+                <div class="font-medium text-gray-950">{{ row.fullName }}</div>
+                <div class="text-xs text-neutral-500">
+                  {{ row.email }} · {{ row.city }}{{ row.organization ? ' · ' + row.organization : '' }}
+                </div>
+              </div>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="whatsapp">
+            <th mat-header-cell *matHeaderCellDef>WhatsApp</th>
+            <td mat-cell *matCellDef="let row">{{ row.whatsapp }}</td>
+          </ng-container>
+          <ng-container matColumnDef="days">
+            <th mat-header-cell *matHeaderCellDef>Jours</th>
+            <td mat-cell *matCellDef="let row">
+              <div class="flex gap-1">
+                @for (dayId of row.selectedDays; track dayId) {
+                  <span class="rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700">
+                    {{ dayLabel(dayId) }}
+                  </span>
+                }
+              </div>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="email">
+            <th mat-header-cell *matHeaderCellDef>E-mail du badge</th>
+            <td mat-cell *matCellDef="let row">
+              @if (row.emailSentAt) {
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
+                  <mat-icon class="size-3.5" svgIcon="mail-check" />
+                  Envoyé
+                </span>
+              } @else {
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+                  <mat-icon class="size-3.5" svgIcon="mail-warning" />
+                  Non envoyé
+                </span>
+              }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="createdAt">
+            <th mat-header-cell *matHeaderCellDef>Inscrit le</th>
+            <td mat-cell *matCellDef="let row">{{ formatDate(row.createdAt) }}</td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let row" class="text-right">
+              <button
+                matButton="outlined"
+                type="button"
+                [disabled]="store.sendingId() === row.id"
+                (click)="store.resendEmail(row.id)">
+                <mat-icon [class.animate-spin]="store.sendingId() === row.id" [svgIcon]="store.sendingId() === row.id ? 'loader-circle' : 'send'" />
+                {{ row.emailSentAt ? 'Renvoyer' : "Envoyer l'e-mail" }}
+              </button>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+      </div>
+      <mat-paginator [length]="total()" [pageSize]="pageSize()" [pageIndex]="page() - 1" (page)="changePage($event)" />
+    </mat-card>
+  }
+</div>

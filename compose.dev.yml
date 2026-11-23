@@ -1,0 +1,81 @@
+name: fif
+
+services:
+  server:
+    container_name: fif-server
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+      target: development
+    restart: unless-stopped
+    env_file:
+      - apps/server/.env
+    environment:
+      UPLOAD_DIR: /app/apps/server/data/uploads
+    ports:
+      - "${PORT:-4000}:${PORT:-4000}"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/server/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - fif-network
+
+  web:
+    container_name: fif-web
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: development
+    restart: unless-stopped
+    command: pnpm --filter web start --host=0.0.0
+    ports:
+      - "4200:4200"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/web/node_modules
+    networks:
+      - fif-network
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    env_file:
+      - apps/server/.env
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:?DB_USERNAME is required}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_DB: ${DB_NAME:?DB_NAME is required}
+    ports:
+      - "${DB_PORT:-5434}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fif-network
+
+  adminer:
+    image: adminer:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - fif-network
+
+networks:
+  fif-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

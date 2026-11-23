@@ -1,0 +1,145 @@
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { isPlatformBrowser } from '@angular/common';
+import { inject, PLATFORM_ID } from '@angular/core';
+import { patchState, signalStore, withMethods, withProps, withState } from '@ngrx/signals';
+import { rxMethod } from '@ngrx/signals/rxjs-interop';
+import {
+  IApiError,
+  IApiSuccess,
+  ICommitteeApplication,
+  ICommitteeApplicationInput,
+  IParticipantRegistration,
+  IParticipantRegistrationInput,
+  IVolunteerApplication,
+  IVolunteerApplicationInput
+} from '@/app/shared/interfaces';
+import { catchError, filter, of, pipe, switchMap, tap } from 'rxjs';
+import { Analytics } from '@/app/core/analytics';
+import { IApplicationState } from '../interfaces';
+import { APPLICATION_STORAGE_KEYS, IApplicationStorageKind } from '../helpers/application-storage';
+
+const initialState: IApplicationState = {
+  isLoading: false,
+  isSubmitted: false,
+  isAlreadyApplied: false,
+  error: '',
+  participant: null
+};
+
+const getErrorMessage = (error: HttpErrorResponse): string => {
+  const apiError = error.error as IApiError | undefined;
+  return apiError?.message ?? 'La candidature n’a pas pu être envoyée. Veuillez réessayer.';
+};
+
+const hasStoredApplication = (key: string): boolean => {
+  try {
+    return window.localStorage.getItem(key) === 'true';
+  } catch {
+    return false;
+  }
+};
+
+const storeParticipantId = (id: string): void => {
+  try {
+    window.localStorage.setItem('fif.participant.id', id);
+  } catch {
+    // Badge remains available during the current confirmation screen.
+  }
+};
+
+const storeApplication = (key: string): void => {
+  try {
+    window.localStorage.setItem(key, 'true');
+  } catch {
+    // Submission remains successful when storage is unavailable.
+  }
+};
+
+export const ApplicationStore = signalStore(
+  withState(initialState),
+  withProps(() => ({
+    _analytics: inject(Analytics),
+    _http: inject(HttpClient),
+    _platformId: inject(PLATFORM_ID)
+  })),
+  withMethods(({ _http, _analytics, _platformId, isAlreadyApplied, ...store }) => ({
+    initialize(kind: IApplicationStorageKind): void {
+      if (!isPlatformBrowser(_platformId)) return;
+
+      patchState(store, {
+        isAlreadyApplied: hasStoredApplication(APPLICATION_STORAGE_KEYS[kind])
+      });
+    },
+    submitCommittee: rxMethod<ICommitteeApplicationInput>(
+      pipe(
+        filter(() => !isAlreadyApplied()),
+        tap(() => patchState(store, { isLoading: true, isSubmitted: false, error: '' })),
+        switchMap((payload) =>
+          _http.post<IApiSuccess<ICommitteeApplication>>('/applications/committee', payload).pipe(
+            tap(() => {
+              if (isPlatformBrowser(_platformId)) {
+                storeApplication(APPLICATION_STORAGE_KEYS.COMMITTEE);
+              }
+              _analytics.track('application_submitted', { kind: 'committee' });
+              patchState(store, { isLoading: false, isSubmitted: true, isAlreadyApplied: true });
+            }),
+            catchError((error: HttpErrorResponse) => {
+              patchState(store, { isLoading: false, error: getErrorMessage(error) });
+              return of(null);
+            })
+          )
+        )
+      )
+    ),
+    submitVolunteer: rxMethod<IVolunteerApplicationInput>(
+      pipe(
+        filter(() => !isAlreadyApplied()),
+        tap(() => patchState(store, { isLoading: true, isSubmitted: false, error: '' })),
+        switchMap((payload) =>
+          _http.post<IApiSuccess<IVolunteerApplication>>('/applications/volunteer', payload).pipe(
+            tap(() => {
+              if (isPlatformBrowser(_platformId)) {
+                storeApplication(APPLICATION_STORAGE_KEYS.VOLUNTEER);
+              }
+              _analytics.track('application_submitted', { kind: 'volunteer' });
+              patchState(store, { isLoading: false, isSubmitted: true, isAlreadyApplied: true });
+            }),
+            catchError((error: HttpErrorResponse) => {
+              patchState(store, { isLoading: false, error: getErrorMessage(error) });
+              return of(null);
+            })
+          )
+        )
+      )
+    ),
+    submitParticipant: rxMethod<IParticipantRegistrationInput>(
+      pipe(
+        filter(() => !isAlreadyApplied()),
+        tap(() => patchState(store, { isLoading: true, isSubmitted: false, error: '' })),
+        switchMap((payload) =>
+          _http.post<IApiSuccess<IParticipantRegistration>>('/applications/participant', payload).pipe(
+            tap((response) => {
+              if (isPlatformBrowser(_platformId)) {
+                storeApplication(APPLICATION_STORAGE_KEYS.PARTICIPANT);
+                storeParticipantId(response.data.id);
+              }
+              patchState(store, {
+                isLoading: false,
+                isSubmitted: true,
+                isAlreadyApplied: true,
+                participant: response.data
+              });
+            }),
+            catchError((error: HttpErrorResponse) => {
+              patchState(store, { isLoading: false, error: getErrorMessage(error) });
+              return of(null);
+            })
+          )
+        )
+      )
+    ),
+    clearError(): void {
+      patchState(store, { error: '' });
+    }
+  }))
+);

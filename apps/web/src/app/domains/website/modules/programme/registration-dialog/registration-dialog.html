@@ -1,0 +1,349 @@
+<!-- Header -->
+<div class="flex shrink-0 items-center gap-3 border-b border-gray-100 px-5 py-4 sm:px-6">
+  <div class="min-w-0 flex-auto">
+    <p class="text-xs font-semibold tracking-wide text-primary-700 uppercase">
+      @if (step() === 'done') {
+        Inscription enregistrée
+      } @else if (signedIn()) {
+        Modifier mon programme
+      } @else {
+        Étape {{ stepNumber() }} sur 3
+      }
+    </p>
+    <h2 class="truncate text-lg font-semibold text-gray-950">
+      @switch (step()) {
+        @case ('sessions') {
+          Choisissez vos sessions
+        }
+        @case ('email') {
+          Votre adresse e-mail
+        }
+        @case ('identity') {
+          Vos informations
+        }
+        @case ('done') {
+          Inscription enregistrée !
+        }
+      }
+    </h2>
+  </div>
+  <button
+    type="button"
+    class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100 hover:text-gray-950"
+    aria-label="Fermer"
+    (click)="requestClose()">
+    <mat-icon svgIcon="x" />
+  </button>
+</div>
+
+@if (signedIn() && step() !== 'done') {
+  <div class="flex shrink-0 items-center gap-2 bg-primary-50 px-5 py-2.5 text-sm text-primary-900 sm:px-6">
+    <mat-icon class="size-4 shrink-0" svgIcon="circle-user" />
+    <span class="min-w-0 truncate">Connecté en tant que <strong>{{ authStore.user()?.email }}</strong></span>
+    <button type="button" class="ml-auto shrink-0 cursor-pointer font-semibold underline-offset-2 hover:underline" (click)="notMe()">
+      Pas vous ?
+    </button>
+  </div>
+}
+
+<!-- Body -->
+<div class="relative min-h-0 flex-auto overflow-y-auto">
+  @if (loading()) {
+    <div class="space-y-3 p-6">
+      @for (row of [1, 2, 3, 4, 5]; track row) {
+        <div class="h-16 animate-pulse rounded-xl bg-gray-100"></div>
+      }
+    </div>
+  } @else {
+    @switch (step()) {
+      @case ('sessions') {
+        <div class="sticky top-0 z-10 flex gap-1.5 border-b border-gray-100 bg-white px-5 pt-3 sm:px-6" role="tablist">
+          @for (day of days(); track day.date; let index = $index) {
+            <button
+              type="button"
+              role="tab"
+              class="relative flex flex-1 cursor-pointer flex-col items-start rounded-t-xl px-3 py-2 text-left transition-colors sm:flex-none sm:px-4"
+              [class]="index === dayIndex() ? 'bg-primary-50 text-primary-900' : 'text-gray-500 hover:bg-gray-50'"
+              [attr.aria-selected]="index === dayIndex()"
+              (click)="selectDay(index)">
+              <span class="flex items-center gap-1.5 text-sm font-bold">
+                {{ day.label }}
+                @if (countByDay()[index]) {
+                  <span class="rounded-full bg-primary-700 px-1.5 text-[11px] leading-4 text-white">{{ countByDay()[index] }}</span>
+                }
+              </span>
+              <span class="text-xs">{{ dayLabel(day.date) }}</span>
+              @if (index === dayIndex()) {
+                <span class="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-primary-700"></span>
+              }
+            </button>
+          }
+        </div>
+
+        @if (activeDay(); as day) {
+          @for (current of [day]; track current.date) {
+            <ul class="space-y-2 p-5 sm:p-6" [class]="direction() === 'next' ? 'day-in-next' : 'day-in-prev'">
+              <li class="pb-1 text-sm text-gray-500">{{ current.theme }}</li>
+              @for (session of current.sessions; track session.id) {
+                @let isSelected = isChecked(session);
+                @let held = alreadyHeld().get(session.id);
+                @let removing = toRemove().includes(session.id);
+                @let canSelect = selectable(session);
+                <li>
+                  <button
+                    type="button"
+                    role="checkbox"
+                    class="flex w-full items-start gap-3 rounded-xl border p-3.5 text-left transition-colors"
+                    [class]="
+                      isSelected
+                        ? 'border-primary-600 bg-primary-50/60 ring-1 ring-primary-600'
+                        : canSelect
+                          ? 'cursor-pointer border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          : 'cursor-default border-gray-100 bg-gray-50/60'
+                    "
+                    [attr.aria-checked]="isSelected"
+                    [attr.aria-disabled]="!canSelect"
+                    (click)="toggle(session)">
+                    <span
+                      class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md border transition-colors"
+                      [class]="
+                        isSelected
+                          ? 'border-primary-700 bg-primary-700 text-white'
+                          : canSelect
+                            ? 'border-gray-300 bg-white'
+                            : 'border-gray-200 bg-gray-100'
+                      ">
+                      @if (isSelected) {
+                        <mat-icon class="size-3.5" svgIcon="check" />
+                      }
+                    </span>
+                    <span class="min-w-0 flex-auto">
+                      <span class="flex items-baseline justify-between gap-3">
+                        <span
+                          class="font-medium"
+                          [class]="canSelect || held ? 'text-gray-950' : 'text-gray-500'"
+                          [class.line-through]="session.status === 'CANCELLED'">
+                          {{ session.title }}
+                        </span>
+                        <span class="shrink-0 text-xs font-semibold text-primary-700 tabular-nums">{{ range(session) }}</span>
+                      </span>
+                      <span class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+                        {{ typeLabels[session.type] ?? session.type }}
+                        @if (session.room) {
+                          <span>· {{ session.room.name }}</span>
+                        }
+                        @if (held && removing) {
+                          <span class="rounded-full bg-red-50 px-2 py-0.5 font-medium text-red-700">Sera retirée</span>
+                        } @else if (held) {
+                          <span class="rounded-full px-2 py-0.5 font-medium" [class]="statusTones[held]">
+                            Déjà choisie · {{ statusLabels[held] }}
+                          </span>
+                        } @else if (session.status === 'CANCELLED') {
+                          <span class="font-semibold text-red-600">Annulé</span>
+                        } @else if (session.admission === 'NONE') {
+                          <span>· Accès libre, sans inscription</span>
+                        } @else if (session.admission === 'APPROVAL') {
+                          <span class="inline-flex items-center gap-1 font-medium text-amber-700">
+                            <mat-icon class="size-3" svgIcon="lock" /> Sur validation — l’organisation confirmera
+                          </span>
+                        } @else if (session.seatsLeft !== null) {
+                          <span>· {{ session.seatsLeft ? session.seatsLeft + ' places restantes' : "Complet — liste d'attente" }}</span>
+                        }
+                      </span>
+                      @for (title of overlapsWith(session); track title) {
+                        <span class="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-amber-700">
+                          <mat-icon class="size-3.5" svgIcon="triangle-alert" />
+                          Se déroule en même temps que « {{ title }} »
+                        </span>
+                      }
+                    </span>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        }
+      }
+
+      @case ('email') {
+        <form class="flex flex-col gap-4 p-5 sm:p-6" (submit)="submitEmail(); $event.preventDefault()">
+          <p class="text-sm text-gray-600">
+            Renseignez votre adresse e-mail pour votre inscription.
+          </p>
+          <mat-form-field appearance="outline">
+            <mat-label>Adresse e-mail</mat-label>
+            <input matInput type="email" autocomplete="email" inputmode="email" [formField]="emailForm.email" />
+          </mat-form-field>
+          <button type="submit" class="hidden" aria-hidden="true" tabindex="-1"></button>
+        </form>
+      }
+
+      @case ('identity') {
+        <form class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6" (submit)="submitIdentity(); $event.preventDefault()">
+          <p class="text-sm text-gray-600 sm:col-span-2">
+            Ces informations serviront à votre inscription et à votre badge d’accès. Adresse renseignée : <strong>{{ emailModel().email }}</strong>
+          </p>
+          <mat-form-field appearance="outline">
+            <mat-label>Prénom</mat-label>
+            <input matInput autocomplete="given-name" [formField]="identityForm.firstName" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Nom</mat-label>
+            <input matInput autocomplete="family-name" [formField]="identityForm.lastName" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Postnom</mat-label>
+            <input matInput [formField]="identityForm.postnom" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Ville</mat-label>
+            <input matInput autocomplete="address-level2" [formField]="identityForm.city" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>WhatsApp</mat-label>
+            <input matInput type="tel" autocomplete="tel" inputmode="tel" [formField]="identityForm.whatsapp" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Organisation (optionnel)</mat-label>
+            <input matInput autocomplete="organization" [formField]="identityForm.organization" />
+          </mat-form-field>
+          <button type="submit" class="hidden" aria-hidden="true" tabindex="-1"></button>
+        </form>
+      }
+
+      @case ('done') {
+        @if (result(); as done) {
+          <div class="flex flex-col items-center p-5 text-center sm:p-6">
+            @if (done.qrCodeDataUrl) {
+              <img class="size-44 rounded-2xl border border-gray-200 p-2" alt="Code QR de votre badge" [src]="done.qrCodeDataUrl" />
+              <p class="mt-3 text-sm text-gray-600">
+                Voici votre badge d’accès. Faites-en une capture d’écran pour le conserver.
+              </p>
+            } @else {
+              <span class="flex size-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                <mat-icon svgIcon="circle-check" />
+              </span>
+            }
+            @if (!done.existing) {
+              <p class="mt-4 text-base font-semibold text-gray-950">Votre inscription au festival est enregistrée.</p>
+              <p class="mt-1 text-sm text-gray-600">Vos activités figurent ci-dessous. Certaines peuvent nécessiter une validation ou être en liste d’attente.</p>
+              <p class="mt-2 text-xs text-gray-500">Vous pourrez retrouver votre programme et votre badge depuis « Mon espace », avec cette même adresse e-mail.</p>
+            }
+            @if (done.existing) {
+              <p class="mt-3 text-sm font-medium text-gray-950">Votre programme est à jour.</p>
+              <p class="mt-1 text-sm text-gray-600">
+                Vous aviez déjà choisi des sessions : elles sont toutes listées ci-dessous, les nouvelles sont marquées.
+                @if (done.removed) {
+                  {{ done.removed }} session{{ done.removed > 1 ? 's ont' : ' a' }} été retirée{{ done.removed > 1 ? 's' : '' }}.
+                }
+              </p>
+            }
+          </div>
+          <div class="flex items-center justify-between px-5 pb-2 sm:px-6">
+            <p class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Mon programme · {{ done.rows.length }}</p>
+            @if (signedIn()) {
+              <button type="button" class="cursor-pointer text-sm font-semibold text-primary-700 hover:underline" (click)="modifyPicks()">
+                Modifier mes choix
+              </button>
+            }
+          </div>
+          <ul class="divide-y divide-gray-100 border-y border-gray-100">
+            @for (row of done.rows; track row.sessionId) {
+              <li class="flex items-center justify-between gap-3 px-5 py-3 sm:px-6">
+                <span class="flex min-w-0 items-center gap-2">
+                  <span class="truncate text-sm font-medium text-gray-950">{{ row.title }}</span>
+                  @if (row.isNew && done.existing) {
+                    <span class="shrink-0 rounded-full bg-primary-700 px-2 py-0.5 text-[11px] font-semibold text-white">Nouveau</span>
+                  }
+                </span>
+                <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium" [class]="statusTones[row.status]">
+                  {{ row.status === 'PENDING' ? 'Demande envoyée' : statusLabels[row.status] }}
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      }
+    }
+  }
+
+  @if (error()) {
+    <div class="mx-5 mb-4 flex items-start gap-2 rounded-xl bg-red-50 px-3.5 py-3 text-sm text-red-800 sm:mx-6" role="alert">
+      <mat-icon class="mt-0.5 size-4 shrink-0" svgIcon="circle-alert" />
+      {{ error() }}
+    </div>
+  }
+</div>
+
+<!-- Footer -->
+<div class="flex shrink-0 items-center gap-3 border-t border-gray-100 bg-white px-5 py-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] sm:px-6">
+  @switch (step()) {
+    @case ('sessions') {
+      <p class="min-w-0 flex-auto text-sm text-gray-600">
+        @if (checkedCount()) {
+          <strong class="text-gray-950">{{ checkedCount() }} session{{ checkedCount() > 1 ? 's' : '' }}</strong>
+          · {{ selectedDays().join(', ') }}
+          @if (signedIn() && hasChanges()) {
+            <span class="block text-xs">
+              @if (selected().length) {
+                +{{ selected().length }} ajout{{ selected().length > 1 ? 's' : '' }}
+              }
+              @if (toRemove().length) {
+                −{{ toRemove().length }} retrait{{ toRemove().length > 1 ? 's' : '' }}
+              }
+            </span>
+          }
+        } @else {
+          Sélectionnez au moins une session
+        }
+      </p>
+      <button
+        matButton="filled"
+        type="button"
+        [disabled]="(signedIn() ? !hasChanges() : !selected().length) || busy()"
+        (click)="continueFromSessions()">
+        {{ signedIn() ? 'Confirmer' : 'Continuer' }}
+        <mat-icon iconPositionEnd [svgIcon]="busy() ? 'loader-circle' : 'arrow-right'" [class.animate-spin]="busy()" />
+      </button>
+    }
+    @case ('email') {
+      <button matButton type="button" (click)="go('sessions')">Retour</button>
+      <span class="flex-auto"></span>
+      <button matButton="filled" type="button" [disabled]="emailForm().invalid() || busy()" (click)="submitEmail()">
+        Continuer
+        <mat-icon iconPositionEnd [svgIcon]="busy() ? 'loader-circle' : 'arrow-right'" [class.animate-spin]="busy()" />
+      </button>
+    }
+    @case ('identity') {
+      <button matButton type="button" (click)="go('email')">Retour</button>
+      <span class="flex-auto"></span>
+      <button matButton="filled" type="button" [disabled]="identityForm().invalid() || busy()" (click)="submitIdentity()">
+        Confirmer mon inscription
+        <mat-icon iconPositionEnd [svgIcon]="busy() ? 'loader-circle' : 'arrow-right'" [class.animate-spin]="busy()" />
+      </button>
+    }
+    @case ('done') {
+      <button matButton type="button" (click)="registerSomeoneElse()">Inscrire une autre personne</button>
+      <span class="flex-auto"></span>
+      @if (signedIn()) {
+        <button matButton="filled" type="button" (click)="openSpace()">Mon espace</button>
+      } @else {
+        <button matButton="filled" type="button" (click)="leave()">Terminer</button>
+      }
+    }
+  }
+</div>
+
+<!-- Leave confirmation -->
+@if (confirmLeave()) {
+  <div class="absolute inset-0 z-20 flex items-end justify-center bg-gray-950/40 p-4 sm:items-center" role="alertdialog" aria-modal="true" aria-labelledby="leave-title">
+    <div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+      <p id="leave-title" class="font-semibold text-gray-950">Quitter l’inscription ?</p>
+      <p class="mt-1 text-sm text-gray-600">Vos sélections et informations seront perdues.</p>
+      <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <button matButton type="button" (click)="leave()">Quitter</button>
+        <button matButton="filled" type="button" cdkFocusInitial (click)="confirmLeave.set(false)">Continuer mon inscription</button>
+      </div>
+    </div>
+  </div>
+}

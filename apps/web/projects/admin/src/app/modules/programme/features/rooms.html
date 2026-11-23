@@ -1,0 +1,67 @@
+<div class="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:py-8">
+  <div class="mb-6 flex items-end justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-semibold tracking-tight">Salles</h1>
+      <p class="mt-1 text-neutral-500">Chaque salle est une colonne du calendrier du programme.</p>
+    </div>
+    <button matButton="filled" type="button" (click)="add()">
+      <mat-icon svgIcon="plus" /> Ajouter
+    </button>
+  </div>
+
+  @if (editing(); as room) {
+    <form class="mb-4 rounded-2xl border border-primary-200 bg-primary-50/40 p-4" (submit)="save(); $event.preventDefault()">
+      <div class="grid gap-3 sm:grid-cols-[1fr_8rem]">
+        <input
+          class="h-10 rounded-xl border border-gray-200 bg-white px-3 text-sm outline-none focus:border-primary-500"
+          placeholder="Nom de la salle"
+          aria-label="Nom de la salle"
+          [value]="room.name"
+          (input)="patch({ name: $any($event.target).value })" />
+        <input
+          class="h-10 rounded-xl border border-gray-200 bg-white px-3 text-sm outline-none focus:border-primary-500"
+          type="number"
+          min="1"
+          placeholder="Places"
+          aria-label="Capacité"
+          [value]="room.capacity ?? ''"
+          (input)="patch({ capacity: $any($event.target).value ? +$any($event.target).value : null })" />
+      </div>
+      <div class="mt-3 flex flex-wrap items-center gap-2">
+        @for (color of palette; track color) {
+          <button
+            type="button"
+            class="size-7 cursor-pointer rounded-full ring-offset-2 transition"
+            [class.ring-2]="room.color === color"
+            [style.background-color]="color"
+            [style.--tw-ring-color]="color"
+            [attr.aria-label]="'Couleur ' + color"
+            (click)="patch({ color })"></button>
+        }
+        <span class="flex-auto"></span>
+        <button matButton type="button" (click)="editing.set(null)">Annuler</button>
+        <button matButton="filled" type="submit" [disabled]="busy() || !room.name.trim()">Enregistrer</button>
+      </div>
+    </form>
+  }
+
+  <ul class="divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-200 bg-white">
+    @for (room of rooms(); track room.id) {
+      <li class="flex items-center gap-3 px-4 py-3">
+        <span class="size-3 shrink-0 rounded-full" [style.background-color]="room.color"></span>
+        <div class="min-w-0 flex-auto">
+          <p class="truncate font-medium text-gray-950">{{ room.name }}</p>
+          <p class="text-xs text-gray-500">{{ room.capacity ? room.capacity + ' places' : 'Capacité non renseignée' }}</p>
+        </div>
+        <button matIconButton type="button" aria-label="Modifier" (click)="edit(room)">
+          <mat-icon class="size-4" svgIcon="pencil" />
+        </button>
+        <button matIconButton type="button" aria-label="Supprimer" [disabled]="busy()" (click)="remove(room)">
+          <mat-icon class="size-4" svgIcon="trash-2" />
+        </button>
+      </li>
+    } @empty {
+      <li class="px-6 py-12 text-center text-sm text-gray-500">Aucune salle. Ajoutez la première.</li>
+    }
+  </ul>
+</div>

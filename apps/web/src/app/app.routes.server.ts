@@ -1,0 +1,36 @@
+import { RenderMode, ServerRoute } from '@angular/ssr';
+
+export const serverRoutes: ServerRoute[] = [
+  {
+    path: 'admin/**',
+    renderMode: RenderMode.Client
+  },
+  {
+    path: 'auth/**',
+    renderMode: RenderMode.Client
+  },
+  {
+    path: 'organisation/**',
+    renderMode: RenderMode.Client
+  },
+  {
+    path: 'mon-espace',
+    renderMode: RenderMode.Client
+  },
+  {
+    path: 'connexion',
+    renderMode: RenderMode.Client
+  },
+  {
+    path: 'rejoindre/**',
+    renderMode: RenderMode.Client
+  },
+  {
+    path: 'innovateur/**',
+    renderMode: RenderMode.Client
+  },
+  {
+    path: '**',
+    renderMode: RenderMode.Server
+  }
+];

@@ -1,0 +1,319 @@
+@let f = form();
+<!-- Header -->
+<div class="flex shrink-0 items-start gap-3 border-b border-gray-200 px-5 py-4">
+  <div class="min-w-0 flex-auto">
+    <p class="text-xs font-semibold tracking-wide text-primary-700 uppercase">
+      {{ isNew() ? 'Nouvelle session' : 'Modifier la session' }}
+    </p>
+    <h2 class="truncate text-lg font-semibold text-gray-950">{{ f.title || 'Sans titre' }}</h2>
+    @if (session(); as current) {
+      @if (current.status === 'CANCELLED') {
+        <span class="mt-1 inline-flex rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">Annulée</span>
+      }
+    }
+  </div>
+  <button matIconButton type="button" aria-label="Fermer" (click)="closed.emit()">
+    <mat-icon svgIcon="x" />
+  </button>
+</div>
+
+@if (session(); as current) {
+  <div class="flex shrink-0 gap-1 border-b border-gray-200 px-3" role="tablist">
+    @for (item of [
+      { id: 'details', label: 'Détails' },
+      { id: 'attendees', label: 'Participants · ' + holders() },
+      { id: 'history', label: 'Historique' }
+    ]; track item.id) {
+      <button
+        type="button"
+        role="tab"
+        class="relative cursor-pointer px-3 py-2.5 text-sm font-medium transition"
+        [class]="tab() === item.id ? 'text-primary-800' : 'text-gray-500 hover:text-gray-900'"
+        [attr.aria-selected]="tab() === item.id"
+        (click)="openTab($any(item.id))">
+        {{ item.label }}
+        @if (tab() === item.id) {
+          <span class="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary-700"></span>
+        }
+      </button>
+    }
+  </div>
+}
+
+<div class="min-h-0 flex-auto overflow-y-auto px-5 py-5">
+  @switch (tab()) {
+    @case ('details') {
+      <div class="flex flex-col gap-4">
+        <mat-form-field appearance="outline">
+          <mat-label>Titre</mat-label>
+          <input matInput [ngModel]="f.title" (ngModelChange)="patch({ title: $event })" />
+        </mat-form-field>
+
+        <div class="grid grid-cols-2 gap-3">
+          <mat-form-field appearance="outline">
+            <mat-label>Type</mat-label>
+            <mat-select [value]="f.type" (selectionChange)="patch({ type: $event.value })">
+              @for (type of types; track type[0]) {
+                <mat-option [value]="type[0]">{{ type[1] }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Salle</mat-label>
+            <mat-select [value]="f.roomId" (selectionChange)="patch({ roomId: $event.value })">
+              <mat-option [value]="null">Sans salle</mat-option>
+              @for (room of rooms(); track room.id) {
+                <mat-option [value]="room.id">{{ room.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div>
+          <p class="mb-1.5 text-sm font-medium text-gray-950">Jour et horaire</p>
+          <div class="flex gap-1.5">
+            @for (day of days(); track day.date) {
+              <button
+                type="button"
+                class="flex-1 cursor-pointer rounded-xl border px-2 py-2 text-left text-sm transition"
+                [class]="f.day === day.date ? 'border-primary-600 bg-primary-50 text-primary-900' : 'border-gray-200 hover:bg-gray-50'"
+                (click)="patch({ day: day.date })">
+                <span class="block font-semibold">{{ day.label }}</span>
+                <span class="block text-xs opacity-70">{{ dayLabel(day.date) }}</span>
+              </button>
+            }
+          </div>
+          <div class="mt-3 grid grid-cols-2 gap-3">
+            <mat-form-field appearance="outline">
+              <mat-label>Début</mat-label>
+              <input matInput type="time" step="900" [min]="timeMin" [max]="timeMax" [ngModel]="f.start" (ngModelChange)="patch({ start: $event })" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Fin</mat-label>
+              <input matInput type="time" step="900" [min]="timeMin" [max]="timeMax" [ngModel]="f.end" (ngModelChange)="patch({ end: $event })" />
+            </mat-form-field>
+          </div>
+          <div class="mt-2 flex flex-wrap gap-1.5">
+            @for (minutes of durations; track minutes) {
+              <button
+                type="button"
+                class="cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium transition"
+                [class]="durationOf(f) === minutes ? 'border-primary-600 bg-primary-600 text-white' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
+                (click)="setDuration(minutes)">
+                {{ minutes < 60 ? minutes + ' min' : minutes / 60 + ' h' }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Intervenants</mat-label>
+          <mat-select multiple [value]="f.speakerIds" (selectionChange)="patch({ speakerIds: $event.value })">
+            @for (speaker of speakersResource.value()?.data ?? []; track speaker.id) {
+              <mat-option [value]="speaker.id">{{ speaker.name }}{{ speaker.title ? ' — ' + speaker.title : '' }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Description</mat-label>
+          <textarea matInput rows="3" [ngModel]="f.description" (ngModelChange)="patch({ description: $event })"></textarea>
+        </mat-form-field>
+
+        <div>
+          <p class="mb-1.5 text-sm font-medium text-gray-950">Accès</p>
+          <div class="grid grid-cols-3 gap-1.5">
+            @for (option of [
+              { value: 'OPEN', label: 'Ouvert', hint: 'Inscription directe' },
+              { value: 'APPROVAL', label: 'Sur validation', hint: 'Demande à accepter' },
+              { value: 'NONE', label: 'Libre', hint: 'Sans inscription' }
+            ]; track option.value) {
+              <button
+                type="button"
+                class="cursor-pointer rounded-xl border px-2.5 py-2 text-left transition"
+                [class]="f.admission === option.value ? 'border-primary-600 bg-primary-50 ring-1 ring-primary-600' : 'border-gray-200 hover:bg-gray-50'"
+                (click)="patch({ admission: $any(option.value) })">
+                <span class="block text-sm font-semibold text-gray-950">{{ option.label }}</span>
+                <span class="block text-xs text-gray-500">{{ option.hint }}</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <div>
+          <p class="mb-1.5 text-sm font-medium text-gray-950">Visibilité</p>
+          <div class="grid grid-cols-2 gap-1.5">
+            @for (option of [
+              { value: 'PUBLIC', label: 'Publique', hint: 'Visible dans le programme' },
+              { value: 'INVITE_ONLY', label: 'Sur invitation', hint: 'Masquée ; ajout par un admin' }
+            ]; track option.value) {
+              <button
+                type="button"
+                class="cursor-pointer rounded-xl border px-2.5 py-2 text-left transition"
+                [class]="f.visibility === option.value ? 'border-primary-600 bg-primary-50 ring-1 ring-primary-600' : 'border-gray-200 hover:bg-gray-50'"
+                (click)="patch({ visibility: $any(option.value) })">
+                <span class="block text-sm font-semibold text-gray-950">{{ option.label }}</span>
+                <span class="block text-xs text-gray-500">{{ option.hint }}</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        @if (f.admission !== 'NONE') {
+          <div class="grid grid-cols-2 items-center gap-3">
+            <mat-form-field appearance="outline">
+              <mat-label>Places (optionnel)</mat-label>
+              <input matInput type="number" min="1" [ngModel]="f.capacity" (ngModelChange)="patch({ capacity: $event ? +$event : null })" />
+            </mat-form-field>
+            <mat-slide-toggle [checked]="f.waitlistEnabled" (change)="patch({ waitlistEnabled: $event.checked })">
+              Liste d’attente
+            </mat-slide-toggle>
+          </div>
+        }
+
+        <!-- Conflicts -->
+        @if (blocking().length) {
+          <div class="rounded-xl border border-red-200 bg-red-50 p-3.5">
+            @for (conflict of blocking(); track conflict.message) {
+              <p class="flex items-start gap-2 text-sm text-red-800">
+                <mat-icon class="mt-0.5 size-4 shrink-0" svgIcon="triangle-alert" />
+                {{ conflict.message }}
+              </p>
+            }
+            <label class="mt-3 flex cursor-pointer items-center gap-2 text-sm font-medium text-red-900">
+              <input type="checkbox" class="size-4 accent-red-700" [checked]="acknowledged()" (change)="acknowledged.set($any($event.target).checked)" />
+              Je confirme malgré le conflit
+            </label>
+          </div>
+        }
+        @for (conflict of info(); track conflict.message) {
+          <p class="flex items-start gap-2 rounded-xl bg-gray-50 p-3 text-sm text-gray-600">
+            <mat-icon class="mt-0.5 size-4 shrink-0" svgIcon="info" />
+            {{ conflict.message }}
+          </p>
+        }
+
+        @if (session(); as current) {
+          <div class="mt-2 border-t border-gray-100 pt-4">
+            @if (confirmAction() === 'cancel') {
+              <div class="rounded-xl border border-gray-200 p-3.5">
+                <p class="text-sm font-medium text-gray-950">Annuler « {{ current.title }} » ?</p>
+                <p class="mt-0.5 text-sm text-gray-500">{{ holders() }} inscrit(s) seront prévenus par e-mail et dans leur espace.</p>
+                <mat-form-field appearance="outline" class="mt-1 w-full">
+                  <mat-label>Motif affiché (optionnel)</mat-label>
+                  <input matInput [ngModel]="cancelReason()" (ngModelChange)="cancelReason.set($event)" />
+                </mat-form-field>
+                <div class="mt-2 flex justify-end gap-2">
+                  <button matButton type="button" (click)="confirmAction.set(null)">Retour</button>
+                  <button matButton="filled" type="button" class="bg-red-600!" [disabled]="busy()" (click)="confirmCancel()">Annuler la session</button>
+                </div>
+              </div>
+            } @else if (confirmAction() === 'delete') {
+              <div class="rounded-xl border border-gray-200 p-3.5">
+                <p class="text-sm font-medium text-gray-950">Supprimer définitivement cette session ?</p>
+                <div class="mt-3 flex justify-end gap-2">
+                  <button matButton type="button" (click)="confirmAction.set(null)">Retour</button>
+                  <button matButton="filled" type="button" class="bg-red-600!" [disabled]="busy()" (click)="confirmDelete()">Supprimer</button>
+                </div>
+              </div>
+            } @else {
+              <div class="flex flex-wrap gap-2">
+                <button matButton type="button" [disabled]="busy()" (click)="duplicate()">
+                  <mat-icon svgIcon="copy" /> Dupliquer
+                </button>
+                @if (current.status === 'CANCELLED') {
+                  <button matButton type="button" [disabled]="busy()" (click)="restore()">
+                    <mat-icon svgIcon="rotate-ccw" /> Reprogrammer
+                  </button>
+                } @else {
+                  <button matButton type="button" class="text-red-700!" (click)="confirmAction.set('cancel')">
+                    <mat-icon svgIcon="ban" /> Annuler la session
+                  </button>
+                }
+                @if (!holders()) {
+                  <button matButton type="button" class="text-red-700!" (click)="confirmAction.set('delete')">
+                    <mat-icon svgIcon="trash-2" /> Supprimer
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    @case ('attendees') {
+      <form class="flex gap-2" (submit)="addAttendee(); $event.preventDefault()">
+        <mat-form-field appearance="outline" class="flex-auto">
+          <mat-label>Ajouter par e-mail</mat-label>
+          <input matInput type="email" [ngModel]="attendeeEmail()" (ngModelChange)="attendeeEmail.set($event)" name="email" />
+        </mat-form-field>
+        <button matButton="outlined" type="submit" class="mt-7 h-10" [disabled]="busy() || !attendeeEmail()">
+          <mat-icon svgIcon="user-plus" /> Ajouter
+        </button>
+      </form>
+      <div class="mt-4 flex items-center justify-between">
+        <p class="text-sm text-gray-500">{{ attendees().length }} personne(s)</p>
+        <button matButton type="button" [disabled]="!attendees().length || busy()" (click)="exportCsv()">
+          <mat-icon svgIcon="download" /> CSV
+        </button>
+      </div>
+      <ul class="mt-2 divide-y divide-gray-100 rounded-xl border border-gray-200">
+        @for (attendee of attendees(); track attendee.registrationId) {
+          <li class="flex items-center gap-3 px-3.5 py-2.5">
+            <div class="min-w-0 flex-auto">
+              <p class="truncate text-sm font-medium text-gray-950">{{ attendee.name }}</p>
+              <p class="truncate text-xs text-gray-500">{{ attendee.email }}{{ attendee.city ? ' · ' + attendee.city : '' }}</p>
+            </div>
+            <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium" [class]="statusTones[attendee.status]">
+              {{ statusLabels[attendee.status] }}
+            </span>
+            <button matIconButton type="button" aria-label="Retirer" [disabled]="busy()" (click)="removeAttendee(attendee)">
+              <mat-icon class="size-4" svgIcon="x" />
+            </button>
+          </li>
+        } @empty {
+          <li class="px-4 py-8 text-center text-sm text-gray-500">Personne pour le moment.</li>
+        }
+      </ul>
+    }
+
+    @case ('history') {
+      <ol class="relative ml-2 border-l border-gray-200">
+        @for (entry of history(); track entry.id) {
+          <li class="mb-5 ml-4">
+            <span class="absolute -left-1.5 mt-1.5 size-3 rounded-full border-2 border-white bg-primary-600"></span>
+            <p class="text-sm font-medium text-gray-950">{{ describe(entry) }}</p>
+            <p class="text-xs text-gray-500">{{ entry.actor ?? 'Système' }} · {{ entry.at | date: 'dd/MM à HH:mm' }}</p>
+          </li>
+        } @empty {
+          <li class="ml-4 py-6 text-sm text-gray-500">Aucune modification enregistrée.</li>
+        }
+      </ol>
+    }
+  }
+
+  @if (error()) {
+    <p class="mt-4 flex items-start gap-2 rounded-xl bg-red-50 px-3.5 py-3 text-sm text-red-800" role="alert">
+      <mat-icon class="mt-0.5 size-4 shrink-0" svgIcon="circle-alert" />
+      {{ error() }}
+    </p>
+  }
+</div>
+
+@if (tab() === 'details') {
+  <div class="flex shrink-0 items-center gap-3 border-t border-gray-200 bg-white px-5 py-3.5">
+    <p class="min-w-0 flex-auto text-xs text-gray-500">
+      @if (willNotify()) {
+        <span class="flex items-center gap-1.5 font-medium text-amber-700">
+          <mat-icon class="size-3.5" svgIcon="bell-ring" /> {{ holders() }} inscrit(s) seront prévenus
+        </span>
+      }
+    </p>
+    <button matButton type="button" (click)="closed.emit()">Fermer</button>
+    <button matButton="filled" type="button" [disabled]="busy() || (blocking().length > 0 && !acknowledged())" (click)="save()">
+      <mat-icon [svgIcon]="busy() ? 'loader-circle' : 'check'" [class.animate-spin]="busy()" />
+      {{ isNew() ? 'Créer' : 'Enregistrer' }}
+    </button>
+  </div>
+}

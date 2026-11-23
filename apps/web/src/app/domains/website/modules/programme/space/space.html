@@ -1,0 +1,224 @@
+<div class="min-h-dvh bg-gray-50 pt-24 pb-16">
+  <div class="mx-auto max-w-5xl px-5 sm:px-8">
+    @if (!isParticipant()) {
+      <div class="mx-auto max-w-md rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+        <span class="flex size-12 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
+          <mat-icon svgIcon="ticket" />
+        </span>
+
+        @if (authMode() === 'choice') {
+          <h1 class="mt-5 text-2xl font-semibold tracking-tight text-gray-950">Accéder à mon espace</h1>
+          <p class="mt-1.5 text-sm text-gray-600">
+            Choisissez une option pour continuer sur la plateforme FIKIRI Innovation Festival 2026.
+          </p>
+          <div class="mt-6 flex flex-col gap-3">
+            <button matButton="filled" type="button" class="min-h-12 justify-center" (click)="chooseLogin()">
+              <mat-icon svgIcon="log-in" />
+              Vous avez déjà un compte ?
+            </button>
+            <button matButton="outlined" type="button" class="min-h-12 justify-center" (click)="chooseSignup()">
+              <mat-icon svgIcon="arrow-right" />
+              Vous inscrire
+            </button>
+          </div>
+        } @else if (authMode() === 'signup') {
+          <h1 class="mt-5 text-2xl font-semibold tracking-tight text-gray-950">Créer mon espace</h1>
+          <p class="mt-1.5 text-sm text-gray-600">
+            Choisissez le type d’inscription qui correspond à votre participation. Les nouveaux comptes innovateur et organisation sont ouverts immédiatement.
+          </p>
+          @if (unknownEmail()) {
+            <div class="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+              <p class="flex items-start gap-2 text-sm font-semibold text-amber-900">
+                <mat-icon class="mt-0.5 size-4 shrink-0" svgIcon="circle-alert" />
+                Aucun compte avec cette adresse
+              </p>
+              <p class="mt-1 text-sm text-amber-900">
+                <strong>{{ loginModel().email }}</strong> n’est pas encore associé à un espace. Vous pouvez créer un compte ci-dessous.
+              </p>
+            </div>
+          }
+          <div class="mt-6 flex flex-col gap-3">
+            <button matButton="outlined" type="button" class="justify-start" (click)="participate()">
+              <mat-icon svgIcon="ticket" />
+              Je participe aux activités
+            </button>
+            <a routerLink="/rejoindre/innovateur" class="flex min-h-11 items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 font-semibold text-primary-700 hover:bg-gray-50">
+              <mat-icon svgIcon="lightbulb" />
+              Je soumets une solution
+            </a>
+            <a routerLink="/rejoindre/organisation" class="flex min-h-11 items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 font-semibold text-primary-700 hover:bg-gray-50">
+              <mat-icon svgIcon="building-2" />
+              Je représente une organisation
+            </a>
+          </div>
+          <button type="button" class="mt-5 cursor-pointer text-sm font-semibold text-gray-600 hover:text-gray-950" (click)="backToAuthChoices()">
+            ← Retour aux choix
+          </button>
+        } @else {
+          <h1 class="mt-5 text-2xl font-semibold tracking-tight text-gray-950">Connexion</h1>
+          <p class="mt-1.5 text-sm text-gray-600">
+            Entrez l’adresse e-mail utilisée lors de votre inscription.
+          </p>
+          <form class="mt-6 flex flex-col gap-4" (submit)="signIn(); $event.preventDefault()">
+            <mat-form-field appearance="outline">
+              <mat-label>Adresse e-mail</mat-label>
+              <input matInput type="email" autocomplete="email" inputmode="email" [formField]="loginForm.email" />
+            </mat-form-field>
+            <button matButton="filled" type="submit" class="h-11" [disabled]="loginForm().invalid() || busy()">
+              <mat-icon [svgIcon]="busy() ? 'loader-circle' : 'arrow-right'" [class.animate-spin]="busy()" />
+              {{ busy() ? 'Ouverture…' : 'Accéder à mon espace' }}
+            </button>
+          </form>
+          @if (error()) {
+            <p class="mt-4 rounded-xl bg-red-50 px-3.5 py-3 text-sm text-red-800" role="alert">{{ error() }}</p>
+          }
+          <button type="button" class="mt-5 cursor-pointer text-sm font-semibold text-gray-600 hover:text-gray-950" (click)="backToAuthChoices()">
+            ← Retour aux choix
+          </button>
+        }
+        @if (error() && authMode() !== 'login') {
+          <p class="mt-4 rounded-xl bg-red-50 px-3.5 py-3 text-sm text-red-800" role="alert">{{ error() }}</p>
+        }
+      </div>
+    } @else {
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="text-sm font-medium text-primary-700">{{ festival().shortName }} · {{ festival().dateLabel }}</p>
+          <h1 class="mt-1 text-3xl font-semibold tracking-tight text-gray-950">
+            Bonjour{{ profileResource.hasValue() ? ', ' + profileResource.value().data.firstName : '' }}
+          </h1>
+        </div>
+        <button matButton type="button" (click)="signOut()">
+          <mat-icon svgIcon="log-out" />
+          Se déconnecter
+        </button>
+      </div>
+
+      <div class="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <section class="min-w-0 rounded-3xl border border-gray-200 bg-white p-5 sm:p-6">
+          <h2 class="mb-4 text-lg font-semibold text-gray-950">Mon programme</h2>
+          <my-programme />
+        </section>
+
+        <aside class="flex flex-col gap-6">
+          <section class="rounded-3xl border border-gray-200 bg-white p-5 text-center">
+            <h2 class="text-left font-semibold text-gray-950">Mon badge</h2>
+            @if (passResource.hasValue()) {
+              <img
+                class="mx-auto mt-4 size-44 rounded-2xl border border-gray-200 p-2"
+                alt="Code QR de mon badge"
+                [src]="passResource.value().data.qrCodeDataUrl" />
+              <p class="mt-3 text-sm text-gray-500">À présenter à l’accueil du festival.</p>
+              <a
+                matButton="outlined"
+                class="mt-3"
+                download="badge-fif-2026.png"
+                (click)="analytics.track('badge_downloaded')"
+                [href]="passResource.value().data.qrCodeDataUrl">
+                <mat-icon svgIcon="download" />
+                Télécharger
+              </a>
+            } @else {
+              <div class="mx-auto mt-4 size-44 animate-pulse rounded-2xl bg-gray-100"></div>
+            }
+          </section>
+
+          <section class="rounded-3xl border border-gray-200 bg-white p-5">
+            <span class="flex size-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+              <mat-icon svgIcon="lightbulb" />
+            </span>
+            <h2 class="mt-3 font-semibold text-gray-950">Vous avez un projet ?</h2>
+            <p class="mt-1 text-sm text-gray-600">
+              Devenez innovateur pour présenter votre solution aux organisations de la marketplace.
+              @if (confirmUpgrade()) {
+                <span class="mt-2 block font-medium text-gray-950">
+                  Vous gardez votre badge et votre programme. Votre espace devient un espace innovateur.
+                </span>
+              }
+            </p>
+            <div class="mt-4 flex gap-2">
+              @if (confirmUpgrade()) {
+                <button matButton type="button" (click)="confirmUpgrade.set(false)">Annuler</button>
+              }
+              <button matButton="filled" type="button" [disabled]="busy()" (click)="becomeInnovator()">
+                {{ confirmUpgrade() ? 'Confirmer' : 'Présenter mon projet' }}
+              </button>
+            </div>
+          </section>
+
+          <section class="rounded-3xl border border-gray-200 bg-white p-5">
+            <span class="flex size-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+              <mat-icon svgIcon="building-2" />
+            </span>
+            <h2 class="mt-3 font-semibold text-gray-950">Vous représentez une organisation ?</h2>
+            <p class="mt-1 text-sm text-gray-600">
+              Publiez un besoin ou un défi pour recevoir des propositions d’innovateurs.
+              @if (confirmOrganization()) {
+                <span class="mt-2 block font-medium text-gray-950">
+                  Vous gardez votre badge et votre programme. Votre espace devient un espace organisation.
+                </span>
+              }
+            </p>
+            <div class="mt-4 flex gap-2">
+              @if (confirmOrganization()) {
+                <button matButton type="button" (click)="confirmOrganization.set(false)">Annuler</button>
+              }
+              <button matButton="outlined" type="button" [disabled]="busy()" (click)="becomeOrganization()">
+                {{ confirmOrganization() ? 'Confirmer' : 'Passer en espace organisation' }}
+              </button>
+            </div>
+          </section>
+
+          @if (profileResource.hasValue()) {
+            @let profile = profileResource.value().data;
+            <section class="rounded-3xl border border-gray-200 bg-white p-5">
+              <div class="flex items-center justify-between">
+                <h2 class="font-semibold text-gray-950">Mes coordonnées</h2>
+                @if (!editing()) {
+                  <button type="button" class="cursor-pointer text-sm font-medium text-primary-700" (click)="startEdit(profile)">
+                    Modifier
+                  </button>
+                }
+              </div>
+              @if (editing()) {
+                <form class="mt-4 flex flex-col gap-3" (submit)="saveProfile(); $event.preventDefault()">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Ville</mat-label>
+                    <input matInput [formField]="profileForm.city" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>WhatsApp</mat-label>
+                    <input matInput type="tel" [formField]="profileForm.whatsapp" />
+                  </mat-form-field>
+                  <div class="flex justify-end gap-2">
+                    <button matButton type="button" (click)="editing.set(false)">Annuler</button>
+                    <button matButton="filled" type="submit" [disabled]="profileForm().invalid() || busy()">Enregistrer</button>
+                  </div>
+                </form>
+              } @else {
+                <dl class="mt-4 space-y-3 text-sm">
+                  <div>
+                    <dt class="text-gray-500">Nom</dt>
+                    <dd class="font-medium text-gray-950">{{ profile.fullName }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-gray-500">E-mail</dt>
+                    <dd class="truncate font-medium text-gray-950">{{ profile.email }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-gray-500">Ville</dt>
+                    <dd class="font-medium text-gray-950">{{ profile.city }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-gray-500">WhatsApp</dt>
+                    <dd class="font-medium text-gray-950">{{ profile.whatsapp }}</dd>
+                  </div>
+                </dl>
+              }
+            </section>
+          }
+        </aside>
+      </div>
+    }
+  </div>
+</div>

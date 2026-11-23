@@ -1,0 +1,76 @@
+name: Web CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - apps/web/**
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - turbo.json
+      - compose.prod.yml
+      - .github/workflows/deploy-web.yml
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Lint and build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.5.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint application
+        run: pnpm lint:web
+
+      - name: Build application
+        run: pnpm build:web
+
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: ci
+    environment: production
+
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd "${{ secrets.PROJECT_PATH }}"
+
+            # The repo is private and the server has no GitHub credentials: authenticate with this run's token.
+            auth="$(printf 'x-access-token:%s' '${{ github.token }}' | base64 | tr -d '\n')"
+            git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth}" fetch origin main
+            git reset --hard "${{ github.sha }}"
+
+            docker compose -f compose.prod.yml up --build -d --remove-orphans web

@@ -1,0 +1,183 @@
+<header
+  class="fixed inset-x-0 top-0 z-50 border-b transition-[background-color,border-color,box-shadow] duration-300"
+  [class.border-transparent]="!solidHeader()"
+  [class.bg-transparent]="!solidHeader()"
+  [class.border-gray-200/80]="solidHeader()"
+  [class.bg-white/95]="solidHeader()"
+  [class.shadow-sm]="solidHeader()"
+  [class.backdrop-blur-xl]="solidHeader()">
+  <nav class="mx-auto flex max-w-screen-2xl items-center justify-between px-6 py-4 sm:px-8 lg:px-16 xl:px-24 2xl:px-32">
+    <a routerLink="/" class="flex items-center gap-2" aria-label="FIF 2026, accueil" (click)="closeMenu()">
+      <img src="/images/favicon.png" alt="" class="size-6 object-contain md:size-8" />
+      <span
+        class="text-xl font-bold tracking-tight transition-colors md:text-2xl"
+        [class.text-white]="!solidHeader()"
+        [class.text-gray-950]="solidHeader()">
+        FIF<span class="text-primary-400">2026</span>
+      </span>
+    </a>
+
+    <!-- Desktop -->
+    <div class="hidden items-center gap-7 lg:flex">
+      @for (link of links; track link.name) {
+        <a
+          class="border-b-2 px-0.5 py-2 text-sm font-semibold transition-colors"
+          routerLinkActive
+          #desktopLink="routerLinkActive"
+          [routerLink]="link.path"
+          [fragment]="link.fragment"
+          [routerLinkActiveOptions]="{ paths: 'exact', fragment: 'exact', queryParams: 'ignored', matrixParams: 'ignored' }"
+          [class]="navLinkClasses(desktopLink.isActive)">
+          {{ link.name }}
+        </a>
+      }
+      @for (group of groups; track group.id) {
+        <button
+          type="button"
+          class="flex cursor-pointer items-center gap-1 border-b-2 px-0.5 py-2 text-sm font-semibold transition-colors"
+          [class]="navLinkClasses(false)"
+          [matMenuTriggerFor]="group.id === 'opportunities' ? opportunitiesMenu : participateMenu">
+          {{ group.label }}
+          <mat-icon class="size-4" svgIcon="chevron-down" />
+        </button>
+      }
+      @if (authStore.user(); as user) {
+        <button
+          type="button"
+          class="flex cursor-pointer items-center gap-2 rounded-full border px-1.5 py-1 pr-3 text-sm font-semibold transition"
+          [class]="!solidHeader() ? 'border-white/30 bg-white/10 text-white' : 'border-gray-200 bg-white text-gray-900'"
+          [matMenuTriggerFor]="accountMenu">
+          <span class="flex size-7 items-center justify-center rounded-full bg-primary-600 text-xs text-white">
+            {{ (user.name || user.email).charAt(0).toUpperCase() }}
+          </span>
+          Mon compte
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="h-10 cursor-pointer rounded-full bg-primary-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700"
+          (click)="participate()">
+          S’inscrire
+        </button>
+      }
+    </div>
+
+    <button
+      type="button"
+      class="flex size-9 items-center justify-center rounded-full border shadow-sm transition-colors lg:hidden"
+      [attr.aria-label]="isMenuOpen() ? 'Fermer le menu' : 'Ouvrir le menu'"
+      [attr.aria-expanded]="isMenuOpen()"
+      [class]="!solidHeader() ? 'border-white/25 bg-white/10 text-white' : 'border-gray-200 bg-white text-gray-900'"
+      (click)="toggleMenu()">
+      <mat-icon [svgIcon]="isMenuOpen() ? 'x' : 'menu'" />
+    </button>
+  </nav>
+
+  <!-- Mobile -->
+  @if (isMenuOpen()) {
+    <div class="max-h-[calc(100dvh-4.5rem)] overflow-y-auto border-t border-gray-100 bg-white px-5 pt-3 pb-6 shadow-xl lg:hidden">
+      @if (authStore.user(); as user) {
+        <p class="truncate px-3 pb-2 text-xs text-gray-500">Connecté : {{ user.email }}</p>
+      }
+      @for (link of links; track link.name) {
+        <a
+          class="flex items-center gap-3 rounded-xl px-3 py-3 text-base font-semibold text-gray-800 hover:bg-gray-100"
+          [routerLink]="link.path"
+          [fragment]="link.fragment"
+          (click)="closeMenu()">
+          <mat-icon class="size-5 text-gray-500" [svgIcon]="link.icon" />
+          {{ link.name }}
+        </a>
+      }
+      @for (group of groups; track group.id) {
+        <p class="mt-4 px-3 pb-1 text-xs font-semibold tracking-wider text-gray-400 uppercase">{{ group.label }}</p>
+        @for (item of visible(group.items); track item.name) {
+          <ng-container *ngTemplateOutlet="mobileItem; context: { $implicit: item }" />
+        }
+      }
+      @if (authStore.user()) {
+        <button
+          type="button"
+          class="mt-3 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-base font-semibold text-gray-800 hover:bg-gray-100"
+          (click)="closeMenu(); authStore.signOut()">
+          <mat-icon class="size-5 text-gray-500" svgIcon="log-out" />
+          Se déconnecter
+        </button>
+      }
+    </div>
+  }
+</header>
+
+<ng-template let-item #mobileItem>
+  @if (item.action === 'participate') {
+    <button
+      type="button"
+      class="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-gray-100"
+      (click)="closeMenu(); participate()">
+      <mat-icon class="mt-0.5 size-5 shrink-0 text-primary-600" [svgIcon]="item.icon" />
+      <span>
+        <span class="block font-semibold text-gray-900">{{ item.name }}</span>
+        <span class="block text-sm text-gray-500">{{ item.description }}</span>
+      </span>
+    </button>
+  } @else {
+    <a class="flex items-start gap-3 rounded-xl px-3 py-2.5 hover:bg-gray-100" [routerLink]="item.path" (click)="closeMenu()">
+      <mat-icon class="mt-0.5 size-5 shrink-0 text-primary-600" [svgIcon]="item.icon" />
+      <span>
+        <span class="block font-semibold text-gray-900">{{ item.name }}</span>
+        <span class="block text-sm text-gray-500">{{ item.description }}</span>
+      </span>
+    </a>
+  }
+</ng-template>
+
+<ng-template let-item #menuItem>
+  <span class="flex items-start gap-3 py-1">
+    <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
+      <mat-icon class="size-[18px]" [svgIcon]="item.icon" />
+    </span>
+    <span class="min-w-0">
+      <span class="block text-sm font-semibold text-gray-950">{{ item.name }}</span>
+      <span class="block text-xs leading-5 whitespace-normal text-gray-500">{{ item.description }}</span>
+    </span>
+  </span>
+</ng-template>
+
+<mat-menu class="w-[22rem] max-w-none! rounded-2xl! p-1" #opportunitiesMenu="matMenu">
+  @for (item of groups[0].items; track item.name) {
+    <a mat-menu-item class="h-auto! min-h-0! rounded-xl! py-1.5!" [routerLink]="item.path">
+      <ng-container *ngTemplateOutlet="menuItem; context: { $implicit: item }" />
+    </a>
+  }
+</mat-menu>
+
+<mat-menu class="w-[22rem] max-w-none! rounded-2xl! p-1" #participateMenu="matMenu">
+  @for (item of visible(groups[1].items); track item.name) {
+    @if (item.action === 'participate') {
+      <button mat-menu-item type="button" class="h-auto! min-h-0! rounded-xl! py-1.5!" (click)="participate()">
+        <ng-container *ngTemplateOutlet="menuItem; context: { $implicit: item }" />
+      </button>
+    } @else {
+      <a mat-menu-item class="h-auto! min-h-0! rounded-xl! py-1.5!" [routerLink]="item.path">
+        <ng-container *ngTemplateOutlet="menuItem; context: { $implicit: item }" />
+      </a>
+    }
+  }
+  @if (authStore.user()) {
+    <button mat-menu-item type="button" class="h-auto! min-h-0! rounded-xl! py-1.5!" (click)="authStore.signOut()">
+      <ng-container
+        *ngTemplateOutlet="menuItem; context: { $implicit: { name: 'Se déconnecter', description: 'Fermer la session sur cet appareil.', icon: 'log-out' } }" />
+    </button>
+  }
+</mat-menu>
+
+<mat-menu xPosition="before" #accountMenu="matMenu">
+  <a mat-menu-item [routerLink]="authStore.homeRoute()">
+    <mat-icon svgIcon="layout-dashboard" />
+    Mon espace
+  </a>
+  <button mat-menu-item type="button" (click)="authStore.signOut()">
+    <mat-icon svgIcon="log-out" />
+    Se déconnecter
+  </button>
+</mat-menu>

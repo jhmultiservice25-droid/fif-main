@@ -1,0 +1,6 @@
+node_modules
+.pnpm-store
+.turbo
+.env
+.DS_Store
+docs/deploy-fix-guide.md

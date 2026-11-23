@@ -1,0 +1,18 @@
+/* Registration modal (PRD-001 §5.2): centred dialog on desktop, full-screen sheet on phones. */
+.fif-registration-panel .mat-mdc-dialog-surface {
+  border-radius: 1.25rem;
+  background: #fff;
+  overflow: hidden;
+}
+
+@media (max-width: 639px) {
+  .fif-registration-panel {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh;
+  }
+
+  .fif-registration-panel .mat-mdc-dialog-surface {
+    border-radius: 0;
+  }
+}

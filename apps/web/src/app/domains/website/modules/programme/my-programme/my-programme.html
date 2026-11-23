@@ -1,0 +1,144 @@
+<div class="flex flex-wrap items-center gap-3">
+  <div class="inline-flex rounded-full bg-gray-100 p-1" role="tablist" aria-label="Affichage">
+    <button
+      type="button"
+      role="tab"
+      class="inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition"
+      [class]="view() === 'list' ? 'bg-white text-gray-950 shadow-sm' : 'text-gray-600'"
+      [attr.aria-selected]="view() === 'list'"
+      (click)="view.set('list')">
+      <mat-icon class="size-4" svgIcon="list" /> Liste
+    </button>
+    <button
+      type="button"
+      role="tab"
+      class="inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition"
+      [class]="view() === 'calendar' ? 'bg-white text-gray-950 shadow-sm' : 'text-gray-600'"
+      [attr.aria-selected]="view() === 'calendar'"
+      (click)="view.set('calendar')">
+      <mat-icon class="size-4" svgIcon="calendar-days" /> Calendrier
+    </button>
+  </div>
+  <span class="flex-auto"></span>
+  <button matButton="filled" type="button" (click)="addSessions()">
+    <mat-icon svgIcon="plus" />
+    Ajouter des sessions
+  </button>
+</div>
+
+@if (changedCount()) {
+  <div class="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+    <mat-icon class="size-4 shrink-0" svgIcon="bell-ring" />
+    <span class="flex-auto">{{ changedCount() }} de vos sessions ont été modifiées par l’organisation.</span>
+    <button type="button" class="cursor-pointer font-semibold hover:underline" (click)="markSeen()">J’ai compris</button>
+  </div>
+}
+
+@if (resource.isLoading() && !resource.hasValue()) {
+  <div class="mt-6 space-y-3">
+    @for (row of [1, 2, 3]; track row) {
+      <div class="h-20 animate-pulse rounded-2xl bg-gray-100"></div>
+    }
+  </div>
+} @else if (!items().length) {
+  <div class="mt-6 flex flex-col items-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-12 text-center">
+    <span class="flex size-12 items-center justify-center rounded-full bg-primary-50 text-primary-700">
+      <mat-icon svgIcon="calendar-days" />
+    </span>
+    <p class="mt-4 font-medium text-gray-950">Aucune session pour le moment</p>
+    <p class="mt-1 max-w-sm text-sm text-gray-500">Choisissez les plénières, masterclasses et rencontres qui vous intéressent.</p>
+    <button matButton="filled" type="button" class="mt-5" (click)="addSessions()">Choisir des sessions</button>
+  </div>
+} @else if (view() === 'list') {
+  <div class="mt-6 space-y-8">
+    @for (day of days(); track day.date) {
+      @if (day.items.length) {
+        <section>
+          <h3 class="flex items-baseline gap-2 text-sm font-semibold text-gray-950">
+            {{ day.label }} <span class="font-normal text-gray-500">· {{ dayLabel(day.date) }}</span>
+          </h3>
+          <ul class="mt-3 space-y-2">
+            @for (item of day.items; track item.session.id) {
+              <li class="rounded-2xl border border-gray-200 bg-white p-4">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
+                  <span class="w-28 shrink-0 text-sm font-semibold text-primary-700 tabular-nums">{{ range(item.session) }}</span>
+                  <div class="min-w-0 flex-auto">
+                    <p class="font-medium text-gray-950" [class.line-through]="item.session.status === 'CANCELLED'">
+                      {{ item.session.title }}
+                    </p>
+                    <p class="mt-0.5 text-xs text-gray-500">
+                      {{ typeLabels[item.session.type] ?? item.session.type }}
+                      @if (item.session.room) {
+                        · {{ item.session.room.name }}
+                      }
+                    </p>
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                      @if (item.session.status === 'CANCELLED') {
+                        <span class="rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">Annulé par l’organisation</span>
+                      } @else {
+                        <span class="rounded-full px-2.5 py-1 text-xs font-medium" [class]="statusTones[item.status]">
+                          {{ statusLabels[item.status] }}
+                        </span>
+                      }
+                      @for (change of item.changes; track change.at) {
+                        <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-900">
+                          Modifié · {{ describeChange(change) }}
+                        </span>
+                      }
+                    </div>
+                    @if (item.status === 'DECLINED' && item.note) {
+                      <p class="mt-2 text-sm text-gray-600">« {{ item.note }} »</p>
+                    }
+                  </div>
+                  @if (item.session.status !== 'CANCELLED' && item.status !== 'DECLINED') {
+                    <button
+                      matButton
+                      type="button"
+                      class="shrink-0 self-start"
+                      [disabled]="busy() === item.session.id"
+                      (click)="cancel(item)">
+                      {{ cancelLabel(item) }}
+                    </button>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    }
+  </div>
+} @else {
+  <div class="mt-6 rounded-2xl border border-gray-200 bg-white">
+    <div class="flex gap-1 border-b border-gray-100 px-3 pt-3" role="tablist" aria-label="Jours">
+      @for (day of days(); track day.date; let index = $index) {
+        <button
+          type="button"
+          role="tab"
+          class="relative flex-1 cursor-pointer rounded-t-xl px-3 py-2 text-left text-sm transition sm:flex-none"
+          [class]="index === dayIndex() ? 'bg-primary-50 font-semibold text-primary-900' : 'text-gray-500 hover:bg-gray-50'"
+          [attr.aria-selected]="index === dayIndex()"
+          (click)="dayIndex.set(index)">
+          {{ day.label }}
+          <span class="block text-xs font-normal">{{ day.items.length }} session{{ day.items.length > 1 ? 's' : '' }}</span>
+        </button>
+      }
+    </div>
+    <div class="max-h-[70vh] overflow-y-auto p-3">
+      <day-calendar [items]="days()[dayIndex()]?.items ?? []" (selected)="detail.set($event)" />
+    </div>
+  </div>
+
+  @if (detail(); as item) {
+    <div class="mt-3 flex items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4">
+      <div class="min-w-0 flex-auto">
+        <p class="font-medium text-gray-950">{{ item.session.title }}</p>
+        <p class="mt-0.5 text-sm text-gray-500">{{ range(item.session) }} · {{ statusLabels[item.status] }}</p>
+        <p class="mt-2 text-sm text-gray-600">{{ item.session.description }}</p>
+      </div>
+      <button matIconButton type="button" aria-label="Fermer" (click)="detail.set(null)">
+        <mat-icon svgIcon="x" />
+      </button>
+    </div>
+  }
+}

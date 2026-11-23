@@ -1,0 +1,175 @@
+<div class="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:py-8">
+  <div class="mb-6">
+    <h1 class="text-3xl font-semibold tracking-tight">Festival</h1>
+    <p class="mt-1 text-neutral-500">
+      Dates, lieu et échéances. Tout le site, les e-mails et le programme suivent ces réglages.
+    </p>
+  </div>
+
+  @if (loading()) {
+    <div class="h-96 animate-pulse rounded-2xl bg-gray-100"></div>
+  } @else if (draft(); as form) {
+    <!-- Dates -->
+    <section class="rounded-2xl border border-gray-200 bg-white p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="font-semibold text-gray-950">Jours du festival</h2>
+          <p class="mt-0.5 text-sm text-neutral-500">
+            Déplacer un jour déplace aussi ses sessions et les intervenants qui y participent.
+          </p>
+        </div>
+        <div class="flex gap-2">
+          <button matButton type="button" (click)="shiftAll(-7)"><mat-icon svgIcon="arrow-left" /> −1 semaine</button>
+          <button matButton type="button" (click)="shiftAll(7)">+1 semaine <mat-icon iconPositionEnd svgIcon="arrow-right" /></button>
+        </div>
+      </div>
+
+      <ul class="mt-4 space-y-3">
+        @for (day of form.days; track $index) {
+          <li class="grid gap-3 rounded-xl border border-gray-200 p-3.5 sm:grid-cols-[10rem_7rem_1fr_auto]">
+            <label class="text-sm">
+              <span class="mb-1 block font-medium text-gray-950">Date</span>
+              <input
+                type="date"
+                class="h-10 w-full rounded-xl border border-gray-200 px-3"
+                [value]="day.date"
+                (change)="patchDay($index, { date: $any($event.target).value })" />
+              <span class="mt-1 block text-xs text-neutral-500">{{ dayName(day.date) }}</span>
+            </label>
+            <label class="text-sm">
+              <span class="mb-1 block font-medium text-gray-950">Libellé</span>
+              <input
+                class="h-10 w-full rounded-xl border border-gray-200 px-3"
+                [value]="day.label"
+                (change)="patchDay($index, { label: $any($event.target).value })" />
+            </label>
+            <label class="text-sm">
+              <span class="mb-1 block font-medium text-gray-950">Thème</span>
+              <input
+                class="h-10 w-full rounded-xl border border-gray-200 px-3"
+                placeholder="Inspirer • Découvrir • Connecter"
+                [value]="day.theme"
+                (change)="patchDay($index, { theme: $any($event.target).value })" />
+            </label>
+            <div class="flex items-end">
+              @if (form.days.length > 1) {
+                <button matIconButton type="button" aria-label="Supprimer ce jour" (click)="removeDay($index)">
+                  <mat-icon class="size-4" svgIcon="trash-2" />
+                </button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+      <button matButton="outlined" type="button" class="mt-3" (click)="addDay()">
+        <mat-icon svgIcon="plus" /> Ajouter un jour
+      </button>
+
+      @if (datesChanged()) {
+        <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p class="flex items-center gap-2 text-sm font-semibold text-amber-900">
+            <mat-icon class="size-4" svgIcon="triangle-alert" /> Les dates ont changé
+          </p>
+          @if (preview(); as plan) {
+            @if (impact().moves.length) {
+              <p class="mt-1 text-sm text-amber-900">
+                À l’enregistrement, {{ impact().sessions }} session(s) et {{ impact().speakers }} intervenant(s) seront
+                déplacés automatiquement :
+              </p>
+              <ul class="mt-2 space-y-1 text-sm text-amber-900">
+                @for (move of impact().moves; track move.from) {
+                  <li>· {{ dayName(move.from) }} → <strong>{{ dayName(move.to) }}</strong> ({{ move.sessions }} session(s))</li>
+                }
+              </ul>
+            } @else {
+              <p class="mt-1 text-sm text-amber-900">Aucune session n’est encore programmée sur les jours déplacés.</p>
+            }
+            @if (plan.removedSessions) {
+              <p class="mt-2 text-sm font-semibold text-red-700">
+                {{ plan.removedSessions }} session(s) se trouvent sur un jour supprimé : l’enregistrement sera refusé.
+              </p>
+            }
+          } @else {
+            <p class="mt-1 text-sm text-amber-900">Calcul de l’impact…</p>
+          }
+        </div>
+      }
+    </section>
+
+    <!-- Deadlines -->
+    <section class="mt-4 rounded-2xl border border-gray-200 bg-white p-5">
+      <h2 class="font-semibold text-gray-950">Échéances</h2>
+      <p class="mt-0.5 text-sm text-neutral-500">Heures de Kinshasa. Laissez vide pour ne pas afficher d’échéance.</p>
+      <div class="mt-4 grid gap-4 sm:grid-cols-3">
+        <label class="text-sm">
+          <span class="mb-1 block font-medium text-gray-950">Ouverture des candidatures</span>
+          <input
+            type="datetime-local"
+            class="h-10 w-full rounded-xl border border-gray-200 px-3"
+            [value]="toLocal(form.applicationsOpenAt)"
+            (change)="patch({ applicationsOpenAt: fromLocal($any($event.target).value) })" />
+        </label>
+        <label class="text-sm">
+          <span class="mb-1 block font-medium text-gray-950">Clôture des candidatures</span>
+          <input
+            type="datetime-local"
+            class="h-10 w-full rounded-xl border border-gray-200 px-3"
+            [value]="toLocal(form.applicationsCloseAt)"
+            (change)="patch({ applicationsCloseAt: fromLocal($any($event.target).value) })" />
+        </label>
+        <label class="text-sm">
+          <span class="mb-1 block font-medium text-gray-950">Clôture des badges</span>
+          <input
+            type="datetime-local"
+            class="h-10 w-full rounded-xl border border-gray-200 px-3"
+            [value]="toLocal(form.badgeDeadline)"
+            (change)="patch({ badgeDeadline: fromLocal($any($event.target).value) })" />
+        </label>
+      </div>
+    </section>
+
+    <!-- Identity -->
+    <section class="mt-4 rounded-2xl border border-gray-200 bg-white p-5">
+      <h2 class="font-semibold text-gray-950">Identité</h2>
+      <p class="mt-0.5 text-sm text-neutral-500">Utilisée sur le site public et dans l’en-tête des e-mails.</p>
+      <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        <label class="text-sm">
+          <span class="mb-1 block font-medium text-gray-950">Nom complet</span>
+          <input class="h-10 w-full rounded-xl border border-gray-200 px-3" [value]="form.name" (change)="patch({ name: $any($event.target).value })" />
+        </label>
+        <label class="text-sm">
+          <span class="mb-1 block font-medium text-gray-950">Nom court</span>
+          <input class="h-10 w-full rounded-xl border border-gray-200 px-3" [value]="form.shortName" (change)="patch({ shortName: $any($event.target).value })" />
+        </label>
+        <label class="text-sm">
+          <span class="mb-1 block font-medium text-gray-950">Ville</span>
+          <input class="h-10 w-full rounded-xl border border-gray-200 px-3" [value]="form.city" (change)="patch({ city: $any($event.target).value })" />
+        </label>
+        <label class="text-sm">
+          <span class="mb-1 block font-medium text-gray-950">Pays</span>
+          <input class="h-10 w-full rounded-xl border border-gray-200 px-3" [value]="form.country" (change)="patch({ country: $any($event.target).value })" />
+        </label>
+      </div>
+    </section>
+
+    @if (error()) {
+      <p class="mt-4 flex items-start gap-2 rounded-xl bg-red-50 px-3.5 py-3 text-sm text-red-800" role="alert">
+        <mat-icon class="mt-0.5 size-4 shrink-0" svgIcon="circle-alert" />
+        {{ error() }}
+      </p>
+    }
+
+    <div class="mt-5 flex items-center gap-3">
+      <p class="flex-auto text-sm text-neutral-500">
+        @if (saved(); as current) {
+          Actuellement : <strong class="text-gray-950">{{ current.dateLabel }}</strong> · {{ current.location }}
+        }
+      </p>
+      <button matButton type="button" [disabled]="busy()" (click)="reset()">Annuler</button>
+      <button matButton="filled" type="button" [disabled]="busy()" (click)="save()">
+        <mat-icon [svgIcon]="busy() ? 'loader-circle' : 'check'" [class.animate-spin]="busy()" />
+        Enregistrer
+      </button>
+    </div>
+  }
+</div>

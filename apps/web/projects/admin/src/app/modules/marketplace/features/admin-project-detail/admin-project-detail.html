@@ -1,0 +1,77 @@
+<div class="p-6">
+  <a routerLink="/projets" class="text-sm text-primary-600 hover:underline">← Retour à la liste</a>
+
+  @if (projectResource.isLoading()) {
+    <p class="mt-6 text-sm text-gray-500">Chargement…</p>
+  } @else if (projectResource.hasValue()) {
+    @let project = projectResource.value().data;
+    <h1 class="mt-4 text-2xl font-semibold">{{ project.title }}</h1>
+    <p class="mt-1 text-sm text-gray-500">{{ project.innovator.displayName }}</p>
+
+    <mat-card class="mt-6 p-5">
+      <h2 class="text-sm font-semibold text-gray-950">Porteur du projet</h2>
+      <dl class="mt-3 grid gap-3 text-sm md:grid-cols-2">
+        <div>
+          <dt class="font-medium text-gray-500">Nom</dt>
+          <dd>{{ project.innovator.displayName || '—' }}</dd>
+        </div>
+        <div>
+          <dt class="font-medium text-gray-500">Organisation</dt>
+          <dd>{{ project.innovator.organization || '—' }}</dd>
+        </div>
+        <div>
+          <dt class="font-medium text-gray-500">E-mail</dt>
+          <dd>
+            @if (project.innovator.email) {
+              <a class="text-primary-700 hover:underline" [href]="'mailto:' + project.innovator.email">
+                {{ project.innovator.email }}
+              </a>
+            } @else {
+              —
+            }
+          </dd>
+        </div>
+        <div>
+          <dt class="font-medium text-gray-500">Téléphone</dt>
+          <dd>
+            @if (project.innovator.phone) {
+              <a class="text-primary-700 hover:underline" [href]="'tel:' + project.innovator.phone">
+                {{ project.innovator.phone }}
+              </a>
+            } @else {
+              —
+            }
+          </dd>
+        </div>
+        <div>
+          <dt class="font-medium text-gray-500">Ville</dt>
+          <dd>{{ project.innovator.city || '—' }}</dd>
+        </div>
+      </dl>
+    </mat-card>
+
+    <mat-card class="mt-4 p-5">
+      <dl class="grid gap-3 text-sm md:grid-cols-2">
+        <div><dt class="font-medium text-gray-500">Statut</dt><dd>{{ statusLabel(project.status) }}</dd></div>
+        <div><dt class="font-medium text-gray-500">Consentement</dt><dd>{{ statusLabel(project.publicationConsent) }}</dd></div>
+        <div><dt class="font-medium text-gray-500">Stade</dt><dd>{{ project.stage }}</dd></div>
+      </dl>
+      <div class="mt-4">
+        <p class="text-sm font-medium text-gray-500">Problème adressé</p>
+        <p class="text-sm">{{ project.problemSolved }}</p>
+      </div>
+      <div class="mt-4">
+        <p class="text-sm font-medium text-gray-500">Solution</p>
+        <p class="text-sm">{{ project.solution }}</p>
+      </div>
+      <div class="mt-4">
+        <p class="text-sm font-medium text-gray-500">Secteurs</p>
+        <p class="text-sm">{{ project.sectors.join(', ') }}</p>
+      </div>
+      <div class="mt-4">
+        <p class="text-sm font-medium text-gray-500">Capacités</p>
+        <p class="text-sm">{{ project.capabilities.join(', ') }}</p>
+      </div>
+    </mat-card>
+  }
+</div>

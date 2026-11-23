@@ -1,0 +1,184 @@
+<div class="px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
+  <div class="max-w-3xl">
+    <a routerLink="/innovateur/projets" class="inline-flex items-center gap-1 text-sm font-medium text-neutral-500 hover:text-gray-950">
+      <mat-icon class="size-4" svgIcon="arrow-left" />
+      Mes projets
+    </a>
+    <h1 class="mt-3 text-3xl font-semibold tracking-tight">{{ isNew() ? 'Nouveau projet' : 'Modifier le projet' }}</h1>
+    <p class="mt-1 text-neutral-500">Trois étapes courtes. Vous pouvez enregistrer un brouillon à tout moment.</p>
+
+    @if (!isNew() && projectResource.isLoading() && !projectResource.hasValue()) {
+      <div class="flex justify-center py-16">
+        <mat-progress-spinner mode="indeterminate" diameter="36" />
+      </div>
+    } @else {
+      <app-steps class="mt-8 block" [steps]="steps" [(current)]="step" />
+
+      <form class="mt-8" (submit)="$event.preventDefault()">
+        @switch (step()) {
+          @case (0) {
+            <h2 class="text-lg font-semibold text-gray-950">Présentez votre projet</h2>
+            <p class="mt-1 text-sm text-neutral-500">Quelques phrases suffisent : allez à l'essentiel.</p>
+            <div class="mt-5 flex flex-col gap-4">
+              <mat-form-field appearance="outline">
+                <mat-label>Titre du projet</mat-label>
+                <input matInput [formField]="projectForm.title" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Problème adressé</mat-label>
+                <textarea matInput rows="4" [formField]="projectForm.problemSolved"></textarea>
+                <mat-hint>Qui est concerné, et pourquoi c'est un problème aujourd'hui.</mat-hint>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Solution proposée</mat-label>
+                <textarea matInput rows="4" [formField]="projectForm.solution"></textarea>
+                <mat-hint>Ce que fait votre solution et ce qui la distingue.</mat-hint>
+              </mat-form-field>
+            </div>
+          }
+          @case (1) {
+            <h2 class="text-lg font-semibold text-gray-950">Classez votre projet</h2>
+            <p class="mt-1 text-sm text-neutral-500">
+              Ces critères servent à vous rapprocher des besoins des organisations.
+            </p>
+            <div class="mt-5 flex flex-col gap-4">
+              <mat-form-field appearance="outline">
+                <mat-label>Secteurs</mat-label>
+                <mat-select multiple [formField]="projectForm.sectors">
+                  @for (option of catalogStore.sectors(); track option.value) {
+                    <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Capacités</mat-label>
+                <mat-select multiple [formField]="projectForm.capabilities">
+                  @for (option of catalogStore.projectCapabilities(); track option.value) {
+                    <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Stade du projet</mat-label>
+                <mat-select [formField]="projectForm.stage">
+                  @for (option of catalogStore.projectStages(); track option.value) {
+                    <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+          }
+          @case (2) {
+            <h2 class="text-lg font-semibold text-gray-950">Vidéo de présentation</h2>
+            <p class="mt-1 text-sm text-neutral-500">
+              La vidéo est facultative. Si vous en ajoutez une, elle doit durer 2 minutes maximum.
+            </p>
+
+            <div class="mt-5">
+              @if (pitchVideo(); as video) {
+                <div class="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4">
+                  <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
+                    <mat-icon svgIcon="video" />
+                  </span>
+                  <div class="min-w-0 flex-auto">
+                    <p class="truncate font-medium text-gray-950">{{ video.file.name }}</p>
+                    <p class="text-sm text-neutral-500">
+                      {{ formatDuration(video.durationSeconds) }} · {{ formatSize(video.file.size) }} · envoyée à
+                      l'enregistrement
+                    </p>
+                  </div>
+                  <button matButton type="button" [disabled]="store.isSaving()" (click)="pitchVideo.set(null)">Retirer</button>
+                </div>
+              } @else {
+                @if (existingVideoName(); as name) {
+                  <div class="mb-3 flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4">
+                    <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                      <mat-icon svgIcon="circle-check" />
+                    </span>
+                    <div class="min-w-0 flex-auto">
+                      <p class="truncate font-medium text-gray-950">{{ name }}</p>
+                      <p class="text-sm text-neutral-500">Vidéo déjà ajoutée à ce projet.</p>
+                    </div>
+                  </div>
+                }
+                <label
+                  class="flex cursor-pointer flex-col items-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-8 text-center transition-colors hover:border-primary-500 hover:bg-primary-50/40 has-focus-visible:ring-2 has-focus-visible:ring-primary-600">
+                  <mat-icon class="text-gray-500" svgIcon="upload" />
+                  <span class="mt-2 font-medium text-gray-950">
+                    {{ existingVideoName() ? 'Remplacer la vidéo' : 'Choisir une vidéo' }}
+                  </span>
+                  <span class="mt-0.5 text-sm text-neutral-500">2 minutes et 200 Mo maximum</span>
+                  <input class="sr-only" type="file" accept="video/*" (change)="onPitchVideoSelected($event)" />
+                </label>
+              }
+              @if (pitchVideoError()) {
+                <p class="mt-2 text-sm font-medium text-error-700">{{ pitchVideoError() }}</p>
+              }
+            </div>
+
+            <h2 class="mt-10 text-lg font-semibold text-gray-950">Publication dans la marketplace</h2>
+            <p class="mt-1 text-sm text-neutral-500">Choisissez comment votre projet est présenté aux organisations.</p>
+            <div class="mt-5 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Consentement de publication">
+              @for (option of catalogStore.publicationConsents(); track option.value) {
+                <button
+                  type="button"
+                  role="radio"
+                  class="cursor-pointer rounded-2xl border p-4 text-left transition-colors"
+                  [class]="
+                    model().publicationConsent === option.value
+                      ? 'border-primary-600 bg-primary-50/50 ring-1 ring-primary-600'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  "
+                  [attr.aria-checked]="model().publicationConsent === option.value"
+                  (click)="selectConsent(option.value)">
+                  <span class="block font-medium text-gray-950">{{ option.label }}</span>
+                  <span class="mt-0.5 block text-sm text-neutral-500">{{ consentHint(option.value) }}</span>
+                </button>
+              }
+            </div>
+          }
+        }
+
+        <div class="mt-10 flex flex-wrap items-center gap-3 border-t border-gray-200 pt-6">
+          @if (step() > 0) {
+            <button matButton type="button" [disabled]="store.isSaving()" (click)="step.set(step() - 1)">
+              <mat-icon svgIcon="arrow-left" />
+              Précédent
+            </button>
+          }
+          <div class="flex-auto"></div>
+          <button
+            matButton="outlined"
+            type="button"
+            [disabled]="store.isSaving() || projectForm().invalid()"
+            (click)="save()">
+            Enregistrer le brouillon
+          </button>
+          @if (step() < steps.length - 1) {
+            <button
+              matButton="filled"
+              type="button"
+              [disabled]="step() === 0 && projectForm().invalid()"
+              (click)="step.set(step() + 1)">
+              Continuer
+              <mat-icon iconPositionEnd svgIcon="arrow-right" />
+            </button>
+          } @else {
+            <button
+              matButton="filled"
+              type="button"
+              [disabled]="store.isSaving() || projectForm().invalid()"
+              (click)="save(true)">
+              <mat-icon [class.animate-spin]="store.isSaving()" [svgIcon]="store.isSaving() ? 'loader-circle' : 'send'" />
+              {{ store.isSaving() ? 'Envoi en cours…' : 'Soumettre le projet' }}
+            </button>
+          }
+        </div>
+      </form>
+    }
+  </div>
+</div>

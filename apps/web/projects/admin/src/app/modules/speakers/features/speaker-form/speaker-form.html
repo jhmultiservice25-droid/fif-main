@@ -1,0 +1,107 @@
+<div class="mx-auto max-w-3xl p-6">
+  <a routerLink="/speakers" class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-900">
+    <mat-icon class="size-4" svgIcon="arrow-left" />
+    Speakers
+  </a>
+
+  <div class="mt-3 flex items-center gap-3">
+    <span class="flex size-10 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
+      <mat-icon svgIcon="mic" />
+    </span>
+    <h1 class="text-2xl font-bold text-gray-950">{{ isNew() ? 'Nouvel intervenant' : "Modifier l'intervenant" }}</h1>
+  </div>
+
+  @if (!isNew() && speakerResource.isLoading()) {
+    <div class="mt-16 flex justify-center">
+      <mat-progress-spinner mode="indeterminate" diameter="36" />
+    </div>
+  } @else {
+    <form class="mt-6" (submit)="save(); $event.preventDefault()">
+      <mat-card class="p-6 sm:p-8">
+        <div class="grid gap-8 sm:grid-cols-[9rem_1fr]">
+          <div class="flex flex-col items-center gap-3">
+            <label class="group relative block cursor-pointer">
+              <input class="sr-only" type="file" accept="image/*" (change)="onPhotoSelected($event)" />
+              @if (displayPhotoUrl(); as photoUrl) {
+                <img [src]="photoUrl" alt="" class="size-28 rounded-full object-cover ring-4 ring-gray-50" />
+              } @else {
+                <span
+                  class="flex size-28 items-center justify-center rounded-full bg-primary-50 text-2xl font-bold text-primary-700 ring-4 ring-gray-50">
+                  @if (initials()) {
+                    {{ initials() }}
+                  } @else {
+                    <mat-icon class="size-8" svgIcon="user-round" />
+                  }
+                </span>
+              }
+              <span
+                class="absolute inset-0 flex items-center justify-center rounded-full bg-gray-950/0 text-white opacity-0 transition group-hover:bg-gray-950/50 group-hover:opacity-100">
+                <mat-icon svgIcon="camera" />
+              </span>
+            </label>
+            <p class="text-center text-xs text-gray-500">Cliquez sur la photo pour la changer</p>
+          </div>
+
+          <div class="flex flex-col gap-4">
+            <mat-form-field appearance="outline">
+              <mat-label>Nom</mat-label>
+              <input matInput [formField]="speakerForm.name" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Rôle / titre (optionnel)</mat-label>
+              <input matInput [formField]="speakerForm.title" placeholder="Ex. Ministre du Numérique" />
+            </mat-form-field>
+          </div>
+        </div>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>E-mail de contact (optionnel, non publié)</mat-label>
+          <input matInput type="email" [formField]="speakerForm.email" placeholder="Pour les messages envoyés aux speakers" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Biographie (optionnel)</mat-label>
+          <textarea matInput rows="4" [formField]="speakerForm.bio"></textarea>
+        </mat-form-field>
+
+        <div class="mt-2">
+          <p class="flex items-center gap-2 text-sm font-semibold text-gray-900">
+            <mat-icon class="size-4" svgIcon="calendar-days" />
+            Jours de participation
+          </p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            @for (day of days(); track day.date) {
+              <button
+                type="button"
+                class="flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition"
+                [class.border-primary-500]="dayChecked(day.date)"
+                [class.bg-primary-50]="dayChecked(day.date)"
+                [class.text-primary-700]="dayChecked(day.date)"
+                [class.border-gray-200]="!dayChecked(day.date)"
+                [class.text-gray-600]="!dayChecked(day.date)"
+                (click)="toggleDay(day.date)">
+                @if (dayChecked(day.date)) {
+                  <mat-icon class="size-4" svgIcon="check" />
+                }
+                {{ day.label }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="mt-8 flex justify-end gap-3 border-t border-gray-100 pt-6">
+          <a matButton routerLink="/speakers">Annuler</a>
+          <button matButton="filled" type="submit" [disabled]="store.isSaving() || speakerForm().invalid()">
+            @if (store.isSaving()) {
+              <mat-icon class="animate-spin" svgIcon="loader-circle" />
+            } @else {
+              <mat-icon svgIcon="check" />
+            }
+            {{ store.isSaving() ? 'Enregistrement…' : 'Enregistrer' }}
+          </button>
+        </div>
+      </mat-card>
+    </form>
+  }
+</div>

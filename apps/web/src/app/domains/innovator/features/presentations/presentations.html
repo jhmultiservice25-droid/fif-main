@@ -1,0 +1,128 @@
+<div class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:py-12">
+  <div class="mb-6">
+    <h1 class="text-3xl font-semibold tracking-tight">Mes présentations</h1>
+    <p class="mt-1 text-neutral-500">
+      Choisissez les solutions de la sélection FIF 2026 que vous présenterez au festival (Demo Show).
+    </p>
+  </div>
+
+  @if (loading()) {
+    <div class="h-64 animate-pulse rounded-2xl bg-gray-100"></div>
+  } @else if (settings(); as rules) {
+    <!-- My picks -->
+    <section class="rounded-2xl border border-gray-200 bg-white p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="font-semibold text-gray-950">Vos choix</h2>
+        <span class="rounded-full px-3 py-1 text-sm font-semibold" [class]="limitReached() ? 'bg-emerald-50 text-emerald-800' : 'bg-gray-100 text-gray-700'">
+          {{ picks().length }} / {{ rules.maxPerInnovator }} solutions choisies
+        </span>
+      </div>
+      @if (rules.closed) {
+        <p class="mt-3 rounded-xl bg-gray-50 px-3.5 py-2.5 text-sm text-gray-600">
+          Les choix sont clôturés{{ rules.deadline ? ' depuis le ' + (rules.deadline | date: 'dd/MM/yyyy à HH:mm') : '' }}.
+        </p>
+      } @else if (rules.deadline) {
+        <p class="mt-1 text-sm text-gray-500">Modifiables jusqu’au {{ rules.deadline | date: 'dd/MM/yyyy à HH:mm' }}.</p>
+      }
+      <ul class="mt-4 grid gap-3 sm:grid-cols-2">
+        @for (pick of picks(); track pick.solutionId) {
+          <li class="flex flex-col rounded-xl border border-primary-200 bg-primary-50/50 p-4">
+            <p class="text-xs font-medium text-primary-700">Réf. {{ pick.reference }}</p>
+            <p class="mt-0.5 font-semibold text-gray-950">{{ pick.name }}</p>
+            <label class="mt-3 flex cursor-pointer items-center gap-2 text-xs text-gray-600">
+              <input type="checkbox" class="size-4 accent-primary-700" [checked]="pick.listedPublicly" [disabled]="busyId() === pick.solutionId"
+                (change)="toggleListing(pick.solutionId, $any($event.target).checked)" />
+              Afficher mon nom sur la page publique
+            </label>
+            @if (!rules.closed) {
+              <button matButton type="button" class="mt-2 self-start" [disabled]="busyId() === pick.solutionId" (click)="release(pick.solutionId, pick.name)">
+                Libérer
+              </button>
+            }
+          </li>
+        }
+        @for (slot of freeSlots(); track slot) {
+          <li class="flex items-center justify-center rounded-xl border border-dashed border-gray-300 p-4 text-sm text-gray-500">
+            Place libre — choisissez une solution ci-dessous
+          </li>
+        }
+      </ul>
+    </section>
+
+    <!-- Catalogue -->
+    <section class="mt-6">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <label class="relative flex-auto">
+          <mat-icon class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-400" svgIcon="search" />
+          <input class="h-10 w-full rounded-xl border border-gray-200 bg-white pr-3 pl-9 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+            placeholder="Rechercher par nom, référence, ville…" (input)="search.set($any($event.target).value)" />
+        </label>
+        <select class="h-10 rounded-xl border border-gray-200 bg-white px-3 text-sm" aria-label="Secteur" (change)="sector.set($any($event.target).value)">
+          <option value="">Tous les secteurs</option>
+          @for (item of data()?.sectors ?? []; track item) {
+            <option [value]="item">{{ item }}</option>
+          }
+        </select>
+        <label class="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+          <input type="checkbox" class="size-4 accent-primary-700" [checked]="onlyAvailable()" (change)="onlyAvailable.set($any($event.target).checked)" />
+          Places disponibles
+        </label>
+      </div>
+      <p class="mt-3 text-sm text-gray-500">{{ solutions().length }} solution(s) · {{ rules.maxPerSolution }} présentateurs maximum par solution</p>
+
+      <ul class="mt-3 divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-200 bg-white">
+        @for (solution of solutions(); track solution.id) {
+          @let full = solution.placesLeft === 0 && !solution.mine;
+          <li class="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center" [class.opacity-50]="full">
+            <div class="min-w-0 flex-auto">
+              <p class="flex items-center gap-2">
+                <span class="truncate font-medium text-gray-950">{{ solution.name }}</span>
+                <span class="shrink-0 text-xs text-gray-400">{{ solution.reference }}</span>
+              </p>
+              <p class="truncate text-sm text-gray-500">{{ solution.summary || solution.teamName }}</p>
+              <p class="mt-0.5 text-xs text-gray-500">{{ solution.sector }}{{ solution.sector && solution.city ? ' · ' : '' }}{{ solution.city }}</p>
+            </div>
+            <div class="flex shrink-0 items-center gap-3">
+              <span class="flex items-center gap-1" [attr.aria-label]="solution.presenters + ' présentateur(s) sur ' + rules.maxPerSolution">
+                @for (seat of seats(); track seat) {
+                  <span class="size-2.5 rounded-full" [class]="seat < solution.presenters ? 'bg-primary-600' : 'bg-gray-200'"></span>
+                }
+              </span>
+              <span class="w-20 text-xs text-gray-500">{{ full ? 'Complet' : solution.placesLeft + ' place(s)' }}</span>
+              @if (solution.mine) {
+                <span class="rounded-full bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white">Choisie</span>
+              } @else {
+                <button matButton="outlined" type="button" [disabled]="full || limitReached() || rules.closed || busyId() === solution.id" (click)="pick(solution)">
+                  Je la présente
+                </button>
+              }
+            </div>
+          </li>
+        } @empty {
+          <li class="px-6 py-12 text-center text-sm text-gray-500">
+            {{ (data()?.solutions ?? []).length ? 'Aucune solution ne correspond.' : 'La sélection des solutions sera publiée très prochainement.' }}
+          </li>
+        }
+      </ul>
+    </section>
+
+    @if (messages().length) {
+      <section class="mt-6 rounded-2xl border border-gray-200 bg-white p-5">
+        <h2 class="font-semibold text-gray-950">Messages de partenaires</h2>
+        <p class="mt-0.5 text-sm text-gray-500">Reçus aussi par e-mail : répondez directement depuis votre messagerie.</p>
+        <ul class="mt-4 divide-y divide-gray-100">
+          @for (message of messages(); track message.id) {
+            <li class="py-3">
+              <p class="text-sm font-medium text-gray-950">
+                {{ message.senderName }}{{ message.senderOrganization ? ' · ' + message.senderOrganization : '' }}
+                <span class="font-normal text-gray-500">— {{ message.targetName }} · {{ message.createdAt | date: 'dd/MM HH:mm' }}</span>
+              </p>
+              <p class="mt-1 text-sm whitespace-pre-line text-gray-600">{{ message.message }}</p>
+              <a class="mt-1 inline-block text-sm font-semibold text-primary-700 hover:underline" [href]="'mailto:' + message.senderEmail">Répondre</a>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  }
+</div>

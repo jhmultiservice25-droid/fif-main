@@ -1,0 +1,82 @@
+<div class="mx-auto max-w-5xl p-6">
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold">Projets</h1>
+      <p class="mt-1 text-sm text-gray-500">Présentez vos solutions pour les rendre visibles aux organisations de la marketplace.</p>
+    </div>
+    <a matButton="filled" routerLink="/innovateur/projets/nouveau">
+      <mat-icon svgIcon="plus" />
+      Nouveau projet
+    </a>
+  </div>
+
+  @if (projectsResource.isLoading()) {
+    <div class="mt-16 flex justify-center">
+      <mat-progress-spinner mode="indeterminate" diameter="36" />
+    </div>
+  } @else if (projects().length) {
+    <div class="mt-6 grid grid-cols-3 gap-4">
+      <div class="rounded-xl border border-gray-200 bg-white p-4">
+        <p class="text-xs font-medium tracking-wide text-gray-400 uppercase">Total</p>
+        <p class="mt-1 text-2xl font-semibold">{{ projects().length }}</p>
+      </div>
+      <div class="rounded-xl border border-gray-200 bg-white p-4">
+        <p class="text-xs font-medium tracking-wide text-gray-400 uppercase">Soumis</p>
+        <p class="mt-1 text-2xl font-semibold text-primary-700">{{ submittedCount() }}</p>
+      </div>
+      <div class="rounded-xl border border-gray-200 bg-white p-4">
+        <p class="text-xs font-medium tracking-wide text-gray-400 uppercase">Brouillons</p>
+        <p class="mt-1 text-2xl font-semibold text-gray-600">{{ draftCount() }}</p>
+      </div>
+    </div>
+
+    <div class="mt-6 grid gap-4">
+      @for (project of projects(); track project.id) {
+        <mat-card class="p-5 transition-shadow hover:shadow-md">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="flex items-start gap-3">
+              <span class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-700">
+                <mat-icon svgIcon="lightbulb" />
+              </span>
+              <div>
+                <h2 class="text-lg font-medium">{{ project.title || 'Sans titre' }}</h2>
+                <p class="mt-1 text-sm text-gray-500">Mis à jour le {{ formatDate(project.updatedAt) }}</p>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span
+                class="rounded-full px-3 py-1 text-xs font-medium"
+                [class]="project.status === 'SUBMITTED' ? 'bg-primary-50 text-primary-700' : 'bg-gray-100 text-gray-600'">
+                {{ statusLabel(project.status) }}
+              </span>
+              @if (project.pitchVideoPath) {
+                <span class="flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                  <mat-icon class="size-3.5" svgIcon="video" />
+                  Vidéo
+                </span>
+              }
+            </div>
+          </div>
+          <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
+            <span class="text-xs text-gray-500">Consentement : {{ consentLabel(project.publicationConsent) }}</span>
+            <a matButton="outlined" [routerLink]="['/innovateur/projets', project.id]">Modifier</a>
+          </div>
+        </mat-card>
+      }
+    </div>
+  } @else {
+    <div class="mt-10 flex flex-col items-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
+      <span class="flex size-14 items-center justify-center rounded-full bg-primary-50 text-primary-700">
+        <mat-icon svgIcon="lightbulb" />
+      </span>
+      <p class="mt-4 font-medium text-gray-700">Aucun projet pour le moment</p>
+      <p class="mt-1 max-w-sm text-sm text-gray-500">
+        Créez votre premier projet pour le rendre visible aux organisations partenaires.
+      </p>
+      <a matButton="filled" class="mt-5" routerLink="/innovateur/projets/nouveau">
+        <mat-icon svgIcon="plus" />
+        Créer un projet
+      </a>
+    </div>
+  }
+</div>

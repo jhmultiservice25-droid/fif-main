@@ -1,0 +1,7 @@
+/* Console-only overrides layered on top of the shared design system. */
+.command-palette-panel .mat-mdc-dialog-surface {
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 24px 64px -12px rgb(4 19 31 / 0.35);
+  overflow: hidden;
+}

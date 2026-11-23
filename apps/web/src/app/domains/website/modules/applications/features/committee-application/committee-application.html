@@ -1,0 +1,183 @@
+<app-application-hero
+  eyebrow="FIF 2026 · Équipe d'organisation"
+  heading="Candidature au comité"
+  description="Choisissez d’abord le poste qui correspond à votre profil, puis complétez votre candidature." />
+
+<section class="min-h-[40vh] bg-gray-50 px-6 py-16 sm:px-8 lg:px-16 lg:py-20">
+  <div class="mx-auto max-w-5xl">
+    @if (store.isSubmitted()) {
+      <div class="rounded-2xl border border-emerald-200 bg-white p-8 text-center shadow-sm sm:p-12">
+        <mat-icon class="text-emerald-600! size-14!" svgIcon="circle-check" />
+        <h2 class="mt-4 text-2xl font-bold text-gray-950">Candidature envoyée</h2>
+        <p class="mx-auto mt-3 max-w-xl text-gray-600">
+          Merci pour votre intérêt. Notre équipe examinera votre dossier et vous contactera à l'adresse indiquée.
+        </p>
+        <a mat-flat-button routerLink="/" class="mt-7">Retour à l'accueil</a>
+      </div>
+    } @else if (store.isAlreadyApplied()) {
+      <div class="rounded-2xl border border-primary-200 bg-white p-8 text-center shadow-sm sm:p-12">
+        <mat-icon class="text-primary-600! size-14!" svgIcon="circle-check" />
+        <h2 class="mt-4 text-2xl font-bold text-gray-950">Vous avez déjà postulé</h2>
+        <p class="mx-auto mt-3 max-w-xl text-gray-600">
+          Une candidature au comité a déjà été envoyée depuis cet appareil. Il n'est pas nécessaire de remplir le
+          formulaire une nouvelle fois...
+        </p>
+        <a mat-flat-button routerLink="/" class="mt-7">Retour à l'accueil</a>
+      </div>
+    } @else {
+      @if (store.error()) {
+        <app-message class="mb-6" title="Envoi impossible" [message]="store.error()" (dismissed)="store.clearError()" />
+      }
+      @if (polesResource.error()) {
+        <app-message
+          class="mb-6"
+          type="warning"
+          title="Postes indisponibles"
+          message="Le catalogue des postes n'a pas pu être chargé. Actualisez la page pour réessayer."
+          [dismissible]="false" />
+      }
+      @if (!applicationForm.primaryJobId().value()) {
+        <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+          <div class="max-w-3xl">
+            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-primary-700">Étape 1 · Choix du poste</p>
+            <h2 class="mt-3 text-3xl font-bold tracking-tight text-gray-950">Quel poste souhaitez-vous occuper ?</h2>
+            <p class="mt-3 text-gray-600">
+              Consultez les postes du Comité d’organisation et choisissez votre poste principal pour continuer.
+            </p>
+          </div>
+
+          @if (polesResource.isLoading()) {
+            <p class="mt-8 text-gray-600">Chargement des postes disponibles…</p>
+          } @else {
+            <div class="mt-10 space-y-10">
+              @for (pole of poles(); track pole.id) {
+                <section>
+                  <div class="border-b border-gray-200 pb-4">
+                    <h3 class="text-xl font-bold text-gray-950">{{ pole.name }}</h3>
+                    <p class="mt-1 text-sm leading-6 text-gray-600">{{ pole.description }}</p>
+                  </div>
+
+                  <div class="mt-5 grid gap-4 md:grid-cols-2">
+                    @for (job of pole.jobs; track job.id) {
+                      <article class="flex h-full flex-col rounded-xl border border-gray-200 bg-gray-50 p-5">
+                        <div class="flex-1">
+                          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary-700">
+                            {{ job.roleKind === 'LEAD' ? 'Responsable / Lead' : 'Adjoint / Chargé' }}
+                          </p>
+                          <h4 class="mt-2 text-lg font-bold text-gray-950">{{ job.title }}</h4>
+                          <p class="mt-3 text-sm leading-6 text-gray-600">{{ job.mission }}</p>
+                        </div>
+                        <button mat-flat-button type="button" class="mt-5 self-start" (click)="selectPrimaryJob(job.id)">
+                          Choisir ce poste
+                        </button>
+                      </article>
+                    }
+                  </div>
+                </section>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <form
+          (submit)="onSubmit(); $event.preventDefault()"
+          class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p class="text-sm font-semibold uppercase tracking-[0.18em] text-primary-700">Étape 2 · Vos informations</p>
+              <h2 class="mt-2 text-2xl font-bold text-gray-950">
+                Poste choisi : {{ selectedPrimaryJobTitle() }}
+              </h2>
+            </div>
+            <button mat-button type="button" (click)="selectPrimaryJob('')">Changer de poste</button>
+          </div>
+
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Deuxième choix (facultatif)</mat-label>
+            <mat-select
+              [value]="applicationForm.secondaryJobId().value()"
+              [disabled]="applicationForm.secondaryJobId().disabled()"
+              (selectionChange)="selectSecondaryJob($event.value)">
+              <mat-option value="">Aucun</mat-option>
+              @for (pole of poles(); track pole.id) {
+                <mat-optgroup [label]="pole.name">
+                  @for (job of pole.jobs; track job.id) {
+                    <mat-option [value]="job.id" [disabled]="job.id === applicationForm.primaryJobId().value()">
+                      {{ job.title }}
+                    </mat-option>
+                  }
+                </mat-optgroup>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <div class="mt-4 grid gap-5 sm:grid-cols-2">
+            <mat-form-field appearance="outline">
+              <mat-label>Nom</mat-label>
+              <input matInput [formField]="applicationForm.identity.lastName" autocomplete="family-name" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Postnom</mat-label>
+              <input matInput [formField]="applicationForm.identity.postnom" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Prénom</mat-label>
+              <input matInput [formField]="applicationForm.identity.firstName" autocomplete="given-name" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Sexe</mat-label>
+              <mat-select
+                [value]="applicationForm.identity.sex().value()"
+                [disabled]="applicationForm.identity.sex().disabled()"
+                (selectionChange)="selectSex($event.value)">
+                <mat-option value="" disabled>Sélectionner</mat-option>
+                @for (option of sexOptions; track option.value) {
+                  <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Date de naissance</mat-label>
+              <input
+                matInput
+                [matDatepicker]="birthDatePicker"
+                [max]="today"
+                (dateChange)="onBirthDateSelected($event.value)" />
+              <mat-datepicker-toggle matIconSuffix [for]="birthDatePicker" />
+              <mat-datepicker #birthDatePicker />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Ville</mat-label>
+              <input matInput [formField]="applicationForm.identity.city" autocomplete="address-level2" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>WhatsApp</mat-label>
+              <input
+                matInput
+                type="tel"
+                [formField]="applicationForm.identity.whatsapp"
+                autocomplete="tel"
+                placeholder="+243…" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Adresse e-mail</mat-label>
+              <input matInput type="email" [formField]="applicationForm.identity.email" autocomplete="email" />
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Pourquoi souhaitez-vous rejoindre le comité ?</mat-label>
+            <textarea matInput [formField]="applicationForm.motivation" rows="4"></textarea>
+            <mat-hint>10 caractères minimum, 150 mots maximum</mat-hint>
+          </mat-form-field>
+
+          <div class="mt-6 flex justify-end">
+            <button mat-flat-button type="submit" [disabled]="applicationForm().invalid() || store.isLoading()">
+              {{ store.isLoading() ? 'Envoi…' : 'Envoyer ma candidature' }}
+            </button>
+          </div>
+        </form>
+      }
+    }
+  </div>
+</section>

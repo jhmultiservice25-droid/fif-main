@@ -1,0 +1,250 @@
+<div class="px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
+  <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <h1 class="text-3xl font-semibold tracking-tight">Solutions FIF</h1>
+      <p class="mt-1 text-neutral-500">La sélection importée et les innovateurs qui la présenteront au festival.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button matButton type="button" (click)="download('/admin/showcase/template.csv', 'modele-solutions-fif.csv')">
+        <mat-icon svgIcon="file-down" /> Modèle
+      </button>
+      <button matButton="outlined" type="button" (click)="download('/admin/showcase/export.csv', 'presentateurs-fif-2026.csv')">
+        <mat-icon svgIcon="download" /> Exporter
+      </button>
+      <button matButton="outlined" type="button" (click)="openSettings()">
+        <mat-icon svgIcon="settings" /> Réglages
+      </button>
+      <label class="inline-flex h-10 cursor-pointer items-center gap-2 rounded-full bg-primary-700 px-5 text-sm font-semibold text-white transition hover:bg-primary-800 has-focus-visible:ring-2 has-focus-visible:ring-primary-500">
+        <mat-icon class="size-4" svgIcon="upload" /> Importer CSV / XLSX
+        <input class="sr-only" type="file" accept=".csv,.xlsx" (change)="onFile($event)" />
+      </label>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="h-96 animate-pulse rounded-2xl bg-gray-100"></div>
+  } @else if (data(); as showcase) {
+    <!-- Import preview -->
+    @if (preview(); as importPreview) {
+      <section class="mb-6 rounded-2xl border border-primary-200 bg-primary-50/40 p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 class="font-semibold text-gray-950">Aperçu de l’import</h2>
+          <div class="flex gap-2">
+            <button matButton type="button" (click)="preview.set(null)">Annuler</button>
+            <button matButton="filled" type="button" [disabled]="busy() || !(importPreview.create + importPreview.update)" (click)="confirmImport()">
+              Appliquer l’import
+            </button>
+          </div>
+        </div>
+        <div class="mt-4 grid gap-3 sm:grid-cols-4">
+          <div class="rounded-xl bg-white p-3"><p class="text-2xl font-semibold text-emerald-700">{{ importPreview.create }}</p><p class="text-xs text-gray-500">à créer</p></div>
+          <div class="rounded-xl bg-white p-3"><p class="text-2xl font-semibold text-primary-700">{{ importPreview.update }}</p><p class="text-xs text-gray-500">à mettre à jour</p></div>
+          <div class="rounded-xl bg-white p-3"><p class="text-2xl font-semibold text-amber-700">{{ importPreview.deactivate.length }}</p><p class="text-xs text-gray-500">absentes du fichier</p></div>
+          <div class="rounded-xl bg-white p-3"><p class="text-2xl font-semibold" [class]="importPreview.errors.length ? 'text-red-700' : 'text-gray-400'">{{ importPreview.errors.length }}</p><p class="text-xs text-gray-500">ligne(s) en erreur, ignorée(s)</p></div>
+        </div>
+        @if (importPreview.errors.length) {
+          <ul class="mt-4 max-h-40 overflow-y-auto rounded-xl bg-white p-3 text-sm text-red-800">
+            @for (error of importPreview.errors; track error.line) {
+              <li>Ligne {{ error.line }} : {{ error.message }}</li>
+            }
+          </ul>
+        }
+        @if (importPreview.deactivate.length) {
+          <label class="mt-4 flex cursor-pointer items-start gap-2 text-sm text-gray-800">
+            <input type="checkbox" class="mt-0.5 size-4 accent-amber-700" [checked]="deactivateMissing()" (change)="deactivateMissing.set($any($event.target).checked)" />
+            <span>
+              Désactiver les {{ importPreview.deactivate.length }} solution(s) absente(s) du fichier
+              ({{ previewReferences(importPreview) }}).
+              Leurs présentateurs seront prévenus par e-mail.
+            </span>
+          </label>
+        }
+      </section>
+    }
+
+    <!-- Settings -->
+    @if (settingsOpen() && settingsDraft(); as draft) {
+      <section class="mb-6 rounded-2xl border border-gray-200 bg-white p-5">
+        <div class="flex items-center justify-between">
+          <h2 class="font-semibold text-gray-950">Réglages des présentations</h2>
+          <button matIconButton type="button" aria-label="Fermer" (click)="settingsOpen.set(false)"><mat-icon svgIcon="x" /></button>
+        </div>
+        <div class="mt-4 grid gap-4 md:grid-cols-4">
+          <label class="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-950">
+            <input type="checkbox" class="size-4 accent-primary-700" [checked]="draft.pickerOpen" (change)="patchSettings({ pickerOpen: $any($event.target).checked })" />
+            Choix ouverts aux innovateurs
+          </label>
+          <label class="text-sm">
+            <span class="mb-1 block font-medium text-gray-950">Date limite (heure de Kinshasa)</span>
+            <input type="datetime-local" class="h-10 w-full rounded-xl border border-gray-200 px-3" [value]="localDeadline(draft.deadline)" (change)="setDeadline($any($event.target).value)" />
+          </label>
+          <label class="text-sm">
+            <span class="mb-1 block font-medium text-gray-950">Solutions par innovateur</span>
+            <input type="number" min="1" max="10" class="h-10 w-full rounded-xl border border-gray-200 px-3" [value]="draft.maxPerInnovator" (change)="patchSettings({ maxPerInnovator: +$any($event.target).value })" />
+          </label>
+          <label class="text-sm">
+            <span class="mb-1 block font-medium text-gray-950">Présentateurs par solution</span>
+            <input type="number" min="1" max="20" class="h-10 w-full rounded-xl border border-gray-200 px-3" [value]="draft.maxPerSolution" (change)="patchSettings({ maxPerSolution: +$any($event.target).value })" />
+          </label>
+        </div>
+        <p class="mt-5 text-sm font-medium text-gray-950">Sessions Demo Show (inscription automatique des présentateurs)</p>
+        <div class="mt-2 flex flex-wrap gap-2">
+          @for (session of sessions(); track session.id) {
+            @if (session.type === 'PITCH' || draft.demoShowSessionIds.includes(session.id)) {
+              <button type="button" class="cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium transition"
+                [class]="draft.demoShowSessionIds.includes(session.id) ? 'border-primary-600 bg-primary-600 text-white' : 'border-gray-200 text-gray-700 hover:bg-gray-50'"
+                (click)="toggleSession(session.id)">
+                {{ session.title }} · {{ session.day }}
+              </button>
+            }
+          } @empty {
+            <span class="text-sm text-gray-500">Aucune session de type Pitch dans le programme.</span>
+          }
+        </div>
+        <div class="mt-5 flex justify-end gap-2">
+          <button matButton type="button" (click)="settingsOpen.set(false)">Annuler</button>
+          <button matButton="filled" type="button" [disabled]="busy()" (click)="saveSettings()">Enregistrer</button>
+        </div>
+      </section>
+    }
+
+    <!-- Coverage -->
+    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div class="rounded-2xl border border-gray-200 bg-white p-4 lg:col-span-2">
+        <div class="flex items-baseline justify-between">
+          <p class="text-sm text-gray-500">Couverture</p>
+          <p class="text-sm font-semibold text-gray-950">{{ coveragePercent() }} %</p>
+        </div>
+        <p class="mt-1 text-2xl font-semibold tracking-tight text-gray-950 tabular-nums">
+          {{ showcase.coverage.covered }} <span class="text-base font-normal text-gray-500">/ {{ showcase.coverage.active }} solutions présentées</span>
+        </p>
+        <div class="mt-3 h-2 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full bg-primary-600" [style.width.%]="coveragePercent()"></div></div>
+      </div>
+      <div class="rounded-2xl border border-gray-200 bg-white p-4">
+        <p class="text-sm text-gray-500">Présentateurs</p>
+        <p class="mt-1 text-2xl font-semibold tracking-tight text-gray-950 tabular-nums">{{ showcase.coverage.presenters }}</p>
+      </div>
+      <div class="rounded-2xl border border-gray-200 bg-white p-4">
+        <p class="text-sm text-gray-500">Complètes</p>
+        <p class="mt-1 text-2xl font-semibold tracking-tight text-gray-950 tabular-nums">{{ showcase.coverage.full }}</p>
+      </div>
+    </div>
+    <p class="mt-3 text-sm text-gray-500">
+      {{ showcase.settings.pickerOpen ? 'Choix ouverts' : 'Choix fermés' }}
+      @if (showcase.settings.deadline) {
+        · jusqu’au {{ showcase.settings.deadline | date: 'dd/MM/yyyy HH:mm' }}
+      }
+      · {{ showcase.settings.maxPerInnovator }} par innovateur · {{ showcase.settings.maxPerSolution }} par solution
+      · Demo Show : {{ demoShowLabel() }}
+    </p>
+
+    <!-- Table -->
+    <div class="mt-6 flex flex-col gap-3 lg:flex-row lg:items-center">
+      <label class="relative flex-auto lg:max-w-sm">
+        <mat-icon class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-400" svgIcon="search" />
+        <input class="h-10 w-full rounded-xl border border-gray-200 bg-white pr-3 pl-9 text-sm outline-none focus:border-primary-500" placeholder="Référence, nom, présentateur…" (input)="search.set($any($event.target).value)" />
+      </label>
+      <div class="flex flex-wrap gap-2">
+        @for (option of [
+          { id: 'all', label: 'Toutes' },
+          { id: 'uncovered', label: 'Sans présentateur' },
+          { id: 'full', label: 'Complètes' },
+          { id: 'inactive', label: 'Désactivées' }
+        ]; track option.id) {
+          <button type="button" class="h-10 cursor-pointer rounded-xl border px-3 text-sm font-medium transition"
+            [class]="filter() === option.id ? 'border-gray-950 bg-gray-950 text-white' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'"
+            (click)="filter.set($any(option.id))">{{ option.label }}</button>
+        }
+      </div>
+      <p class="text-sm text-gray-500 lg:ml-auto">{{ rows().length }} solution(s)</p>
+    </div>
+
+    <ul class="mt-3 divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-200 bg-white">
+      @for (solution of rows(); track solution.id) {
+        <li>
+          <button type="button" class="flex w-full cursor-pointer items-center gap-4 px-4 py-3 text-left transition hover:bg-gray-50" (click)="selectedId.set(solution.id)">
+            <span class="w-24 shrink-0 text-xs font-medium text-gray-500">{{ solution.reference }}</span>
+            <span class="min-w-0 flex-auto">
+              <span class="block truncate font-medium text-gray-950">{{ solution.name }}</span>
+              <span class="block truncate text-xs text-gray-500">{{ presenterNames(solution) }}</span>
+            </span>
+            <span class="hidden w-40 shrink-0 truncate text-xs text-gray-500 md:block">{{ solution.sector }}</span>
+            <span class="flex shrink-0 items-center gap-1">
+              @for (presenter of solution.presenters; track presenter.userId) {
+                <span class="size-2.5 rounded-full bg-primary-600"></span>
+              }
+              @for (seat of emptySeats(solution, showcase.settings.maxPerSolution); track seat) {
+                <span class="size-2.5 rounded-full bg-gray-200"></span>
+              }
+            </span>
+            <mat-icon class="size-4 shrink-0 text-gray-300" svgIcon="chevron-right" />
+          </button>
+        </li>
+      } @empty {
+        <li class="px-6 py-14 text-center">
+          <p class="font-medium text-gray-950">{{ showcase.solutions.length ? 'Aucune solution ne correspond.' : 'Aucune solution importée.' }}</p>
+          @if (!showcase.solutions.length) {
+            <p class="mt-1 text-sm text-gray-500">Téléchargez le modèle, remplissez-le puis importez votre fichier CSV ou XLSX.</p>
+          }
+        </li>
+      }
+    </ul>
+  }
+</div>
+
+<!-- Solution panel -->
+@if (selected(); as solution) {
+  <div class="fixed inset-0 z-40 bg-gray-950/20" (click)="selectedId.set(null)" aria-hidden="true"></div>
+  <aside class="fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l border-gray-200 bg-white shadow-2xl sm:w-[30rem]" role="dialog" aria-label="Solution">
+    <div class="flex items-start gap-3 border-b border-gray-200 px-5 py-4">
+      <div class="min-w-0 flex-auto">
+        <p class="text-xs font-semibold tracking-wide text-primary-700 uppercase">{{ solution.reference }}</p>
+        <h2 class="text-lg font-semibold text-gray-950">{{ solution.name }}</h2>
+        <p class="text-sm text-gray-500">{{ solution.sector }}{{ solution.city ? ' · ' + solution.city : '' }}{{ solution.teamName ? ' · ' + solution.teamName : '' }}</p>
+      </div>
+      <button matIconButton type="button" aria-label="Fermer" (click)="selectedId.set(null)"><mat-icon svgIcon="x" /></button>
+    </div>
+    <div class="min-h-0 flex-auto overflow-y-auto px-5 py-5">
+      @if (solution.summary) {
+        <p class="text-sm leading-6 text-gray-700">{{ solution.summary }}</p>
+      }
+      <p class="mt-4 text-xs text-gray-500">Contact : {{ solution.contactEmail ?? 'équipe FIF (aucun e-mail fourni)' }}</p>
+
+      <h3 class="mt-6 text-sm font-semibold text-gray-950">Présentateurs · {{ solution.presenters.length }} / {{ data()?.settings?.maxPerSolution }}</h3>
+      <ul class="mt-2 divide-y divide-gray-100 rounded-xl border border-gray-200">
+        @for (presenter of solution.presenters; track presenter.userId) {
+          <li class="px-3.5 py-3">
+            <div class="flex items-center gap-3">
+              <div class="min-w-0 flex-auto">
+                <p class="truncate text-sm font-medium text-gray-950">{{ presenter.name }}</p>
+                <p class="truncate text-xs text-gray-500">{{ presenter.email }} · {{ presenter.assignedByAdmin ? 'attribué par l’équipe' : 'choisi le ' + (presenter.pickedAt | date: 'dd/MM HH:mm') }}</p>
+              </div>
+              <button matIconButton type="button" aria-label="Retirer" [disabled]="busy()" (click)="removePresenter(solution, presenter.userId)"><mat-icon class="size-4" svgIcon="x" /></button>
+            </div>
+            <select class="mt-2 h-9 w-full rounded-lg border border-gray-200 px-2 text-xs text-gray-700" aria-label="Déplacer vers" [disabled]="busy()" (change)="movePresenter(solution, presenter.userId, $any($event.target).value)">
+              <option value="">Déplacer vers une autre solution…</option>
+              @for (target of moveTargets(); track target.id) {
+                <option [value]="target.id">{{ target.reference }} — {{ target.name }} ({{ target.presenters.length }}/{{ data()?.settings?.maxPerSolution }})</option>
+              }
+            </select>
+          </li>
+        } @empty {
+          <li class="px-4 py-6 text-center text-sm text-gray-500">Aucun présentateur.</li>
+        }
+      </ul>
+
+      <form class="mt-5 rounded-xl border border-gray-200 p-3.5" (submit)="addPresenter(solution); $event.preventDefault()">
+        <p class="text-sm font-medium text-gray-950">Attribuer à un innovateur</p>
+        <div class="mt-2 flex gap-2">
+          <input type="email" class="h-10 flex-auto rounded-xl border border-gray-200 px-3 text-sm outline-none focus:border-primary-500" placeholder="E-mail de l’innovateur" [value]="addEmail()" (input)="addEmail.set($any($event.target).value)" />
+          <button matButton="filled" type="submit" [disabled]="busy() || !addEmail()">Ajouter</button>
+        </div>
+        <label class="mt-3 flex cursor-pointer items-center gap-2 text-xs text-gray-600">
+          <input type="checkbox" class="size-4 accent-amber-700" [checked]="override()" (change)="override.set($any($event.target).checked)" />
+          Dépasser les limites si nécessaire (ajout et déplacement)
+        </label>
+        <p class="mt-2 text-xs text-gray-500">Chaque modification est notifiée par e-mail aux innovateurs concernés.</p>
+      </form>
+    </div>
+  </aside>
+}

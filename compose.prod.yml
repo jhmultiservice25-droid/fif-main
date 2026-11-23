@@ -1,0 +1,66 @@
+name: fif
+
+services:
+  server:
+    container_name: fif-server
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+      target: production
+    restart: unless-stopped
+    env_file:
+      - apps/server/.env
+    environment:
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      # Must match UPLOAD_DIR exactly, or uploads land in the container layer and die on recreate.
+      - uploads_data:/app/uploads
+    ports:
+      - "${PORT:-4000}:${PORT:-4000}"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - fif-network
+
+  web:
+    container_name: fif-web
+    environment:
+      - PORT=4100
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: production
+    restart: unless-stopped
+    command: pnpm --filter web start:prod --host=0.0.0
+    ports:
+      - "4100:4100"
+    networks:
+      - fif-network
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    env_file:
+      - apps/server/.env
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fif-network
+
+networks:
+  fif-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  uploads_data:

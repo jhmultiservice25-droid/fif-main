@@ -1,0 +1,71 @@
+<button
+  matIconButton
+  type="button"
+  class="relative"
+  aria-label="Notifications"
+  #trigger="matMenuTrigger"
+  [matMenuTriggerFor]="menu"
+  (menuOpened)="resource.reload()">
+  <mat-icon svgIcon="bell" />
+  @if (unread() > 0) {
+    <span
+      class="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-error-600 px-1 text-[10px] leading-none font-semibold text-white ring-2 ring-white">
+      {{ unread() > 9 ? '9+' : unread() }}
+    </span>
+  }
+</button>
+
+<mat-menu class="max-w-none! rounded-2xl!" xPosition="before" #menu="matMenu">
+  <div
+    class="w-96 max-w-[calc(100vw-2rem)]"
+    role="group"
+    tabindex="-1"
+    aria-label="Notifications"
+    (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+    <div class="flex items-center justify-between gap-3 px-4 pt-2 pb-3">
+      <div>
+        <p class="font-semibold text-gray-950">Notifications</p>
+        <p class="text-xs text-neutral-500">
+          {{ unread() > 0 ? unread() + ' non lue(s)' : 'Vous êtes à jour' }}
+        </p>
+      </div>
+      @if (unread() > 0) {
+        <button matButton type="button" [disabled]="isUpdating()" (click)="markAllRead()">Tout marquer comme lu</button>
+      }
+    </div>
+
+    <div class="max-h-96 overflow-y-auto border-t border-gray-100">
+      @for (notification of items(); track notification.id) {
+        <button
+          type="button"
+          class="flex w-full cursor-pointer items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50"
+          (click)="open(notification, trigger)">
+          <span
+            class="mt-1.5 size-2 shrink-0 rounded-full"
+            [class]="notification.readAt ? 'bg-transparent' : 'bg-primary-600'"></span>
+          <span class="min-w-0 flex-auto">
+            <span
+              class="block text-sm text-gray-950"
+              [class.font-semibold]="!notification.readAt"
+              [class.font-medium]="notification.readAt">
+              {{ notification.title }}
+            </span>
+            <span class="mt-0.5 line-clamp-2 block text-sm text-neutral-600">{{ notification.body }}</span>
+            <span class="mt-1 block text-xs text-neutral-400">{{ relativeTime(notification.createdAt) }}</span>
+          </span>
+          @if (routeFor(notification)) {
+            <mat-icon class="mt-1 size-4 shrink-0 text-neutral-400" svgIcon="chevron-right" />
+          }
+        </button>
+      } @empty {
+        <div class="flex flex-col items-center px-6 py-10 text-center">
+          <span class="flex size-11 items-center justify-center rounded-full bg-gray-100 text-gray-500">
+            <mat-icon svgIcon="bell-off" />
+          </span>
+          <p class="mt-3 text-sm font-medium text-gray-700">Aucune notification</p>
+          <p class="mt-0.5 text-sm text-neutral-500">Les nouveautés de votre compte apparaîtront ici.</p>
+        </div>
+      }
+    </div>
+  </div>
+</mat-menu>

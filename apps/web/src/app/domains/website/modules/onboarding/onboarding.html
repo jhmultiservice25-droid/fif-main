@@ -1,0 +1,156 @@
+<div class="min-h-dvh bg-gray-50 pt-24 pb-16">
+  <div class="mx-auto grid max-w-5xl items-start gap-10 px-5 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)]">
+    <div class="lg:pt-10">
+      <a routerLink="/rejoindre" class="inline-flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-950">
+        <mat-icon class="size-4" svgIcon="arrow-left" /> Autres façons de participer
+      </a>
+
+      <span class="mt-6 flex size-12 items-center justify-center rounded-2xl" [class]="copy.tone">
+        <mat-icon [svgIcon]="copy.icon" />
+      </span>
+
+      <p class="mt-5 text-sm font-semibold tracking-wide text-primary-700 uppercase">{{ copy.eyebrow }}</p>
+      <h1 class="mt-2 text-3xl font-bold tracking-tight text-gray-950 sm:text-4xl">{{ copy.title }}</h1>
+      <p class="mt-3 max-w-md text-gray-600">{{ copy.lead }}</p>
+
+      <ol class="mt-8 space-y-3 text-sm">
+        @for (item of ['Votre e-mail', profile === 'INNOVATOR' ? 'Votre profil innovateur' : 'Votre organisation']; track item; let index = $index) {
+          <li class="flex items-center gap-3">
+            <span
+              class="flex size-7 items-center justify-center rounded-full text-xs font-semibold"
+              [class]="index + 1 < stepNumber() ? 'bg-primary-600 text-white' : index + 1 === stepNumber() ? 'bg-primary-50 text-primary-800 ring-2 ring-primary-600' : 'bg-gray-100 text-gray-500'">
+              {{ index + 1 }}
+            </span>
+            <span [class]="index + 1 <= stepNumber() ? 'font-medium text-gray-950' : 'text-gray-500'">{{ item }}</span>
+          </li>
+        }
+      </ol>
+    </div>
+
+    <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+      @switch (step()) {
+        @case ('email') {
+          <h2 class="text-xl font-semibold text-gray-950">Votre adresse e-mail</h2>
+          <p class="mt-1 text-sm text-gray-600">
+            Créez un nouvel espace avec votre adresse e-mail : votre session sera ouverte immédiatement.
+            Si vous avez déjà un compte, utilisez « Vous avez déjà un compte ? » pour vous connecter.
+          </p>
+
+          <form class="mt-6 flex flex-col gap-4" (submit)="continueWithEmail(); $event.preventDefault()">
+            <mat-form-field appearance="outline">
+              <mat-label>Adresse e-mail</mat-label>
+              <input matInput type="email" autocomplete="email" inputmode="email" [formField]="emailForm.email" />
+            </mat-form-field>
+
+            <button matButton="filled" type="submit" class="h-11" [disabled]="emailForm().invalid() || busy()">
+              <mat-icon [svgIcon]="busy() ? 'loader-circle' : 'arrow-right'" [class.animate-spin]="busy()" />
+              {{ busy() ? 'Ouverture en cours…' : 'Créer mon espace' }}
+            </button>
+          </form>
+
+          <p class="mt-5 text-sm text-gray-500">
+            Vous avez déjà un compte ?
+            <a routerLink="/mon-espace" class="font-semibold text-primary-700 hover:underline">Me connecter</a>
+          </p>
+        }
+
+        @case ('profile') {
+          @if (profile === 'INNOVATOR') {
+            <h2 class="text-xl font-semibold text-gray-950">Votre profil innovateur</h2>
+            <p class="mt-1 text-sm text-gray-600">Visible par les partenaires et l’équipe FIF.</p>
+
+            <form class="mt-6 grid gap-4" (submit)="saveProfile(); $event.preventDefault()">
+              <mat-form-field appearance="outline">
+                <mat-label>Nom d’affichage</mat-label>
+                <input matInput autocomplete="name" [formField]="innovatorForm.displayName" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Organisation / startup (optionnel)</mat-label>
+                <input matInput autocomplete="organization" [formField]="innovatorForm.organization" />
+              </mat-form-field>
+
+              <div class="grid gap-4 sm:grid-cols-2">
+                <mat-form-field appearance="outline">
+                  <mat-label>Ville</mat-label>
+                  <input matInput autocomplete="address-level2" [formField]="innovatorForm.city" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Téléphone</mat-label>
+                  <input matInput type="tel" autocomplete="tel" [formField]="innovatorForm.phone" />
+                </mat-form-field>
+              </div>
+
+              <button matButton="filled" type="submit" class="h-11" [disabled]="innovatorForm().invalid() || busy()">
+                Créer mon espace
+              </button>
+            </form>
+          } @else {
+            <h2 class="text-xl font-semibold text-gray-950">Votre organisation</h2>
+            <p class="mt-1 text-sm text-gray-600">Ces informations accompagnent vos fiches de besoin.</p>
+
+            <form class="mt-6 grid gap-4" (submit)="saveProfile(); $event.preventDefault()">
+              <mat-form-field appearance="outline">
+                <mat-label>Nom de l’organisation</mat-label>
+                <input matInput autocomplete="organization" [formField]="organizationForm.name" />
+              </mat-form-field>
+
+              <div class="grid gap-4 sm:grid-cols-2">
+                <mat-form-field appearance="outline">
+                  <mat-label>Type</mat-label>
+                  <mat-select [formField]="organizationForm.type">
+                    @for (option of catalog.orgTypes(); track option.value) {
+                      <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Secteur</mat-label>
+                  <mat-select [formField]="organizationForm.sector">
+                    @for (option of catalog.sectors(); track option.value) {
+                      <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Ville</mat-label>
+                <input matInput autocomplete="address-level2" [formField]="organizationForm.city" />
+              </mat-form-field>
+
+              <div class="grid gap-4 sm:grid-cols-2">
+                <mat-form-field appearance="outline">
+                  <mat-label>Personne de contact</mat-label>
+                  <input matInput autocomplete="name" [formField]="organizationForm.contactName" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Fonction (optionnel)</mat-label>
+                  <input matInput autocomplete="organization-title" [formField]="organizationForm.contactTitle" />
+                </mat-form-field>
+              </div>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Téléphone</mat-label>
+                <input matInput type="tel" autocomplete="tel" [formField]="organizationForm.phone" />
+              </mat-form-field>
+
+              <button matButton="filled" type="submit" class="h-11" [disabled]="organizationForm().invalid() || busy()">
+                Créer mon espace
+              </button>
+            </form>
+          }
+        }
+      }
+
+      @if (error()) {
+        <p class="mt-4 rounded-xl bg-red-50 px-3.5 py-3 text-sm text-red-800" role="alert">
+          {{ error() }}
+        </p>
+      }
+    </div>
+  </div>
+</div>

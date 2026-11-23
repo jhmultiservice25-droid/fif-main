@@ -1,0 +1,86 @@
+<div class="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+  <aside class="relative hidden overflow-hidden bg-primary-950 text-white lg:flex lg:flex-col">
+    <div
+      class="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:linear-gradient(to_right,white_1px,transparent_1px),linear-gradient(to_bottom,white_1px,transparent_1px)] [background-size:48px_48px]"></div>
+    <div class="pointer-events-none absolute -bottom-40 -left-24 size-[32rem] rounded-full bg-primary-500/20 blur-3xl"></div>
+
+    <div class="relative flex flex-auto flex-col justify-between p-12 xl:p-16">
+      <div class="flex items-center gap-2.5">
+        <img src="/images/favicon.png" alt="" class="size-9 object-contain" />
+        <span class="text-xl font-bold tracking-tight">FIF 2026</span>
+      </div>
+
+      <div>
+        <span
+          class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-primary-100 ring-1 ring-white/15">
+          <span class="size-1.5 rounded-full" [class]="status().tone === 'live' ? 'bg-green-400' : 'bg-primary-300'"></span>
+          {{ status().label }}
+        </span>
+        <h1 class="mt-6 max-w-md text-4xl leading-tight font-semibold tracking-tight xl:text-5xl">
+          Console d’organisation du festival
+        </h1>
+        <p class="mt-4 max-w-md text-base text-primary-100/80">
+          Inscriptions, programme, speakers, communication et contrôle d’accès — au même endroit.
+        </p>
+      </div>
+
+      <p class="text-sm text-primary-100/60">{{ chrome.info().name }} · {{ festivalLabel() }}</p>
+    </div>
+  </aside>
+
+  <main class="flex items-center justify-center px-5 py-12 sm:px-10">
+    <div class="w-full max-w-sm">
+      <div class="mb-10 flex items-center gap-2.5 lg:hidden">
+        <img src="/images/favicon.png" alt="" class="size-8 object-contain" />
+        <span class="text-lg font-bold tracking-tight">FIF 2026</span>
+        <span class="ml-auto rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">{{ status().label }}</span>
+      </div>
+
+      <h2 class="text-2xl font-semibold tracking-tight text-gray-950">Connexion</h2>
+      <p class="mt-1.5 text-sm text-neutral-500">Accès réservé à l’équipe d’organisation.</p>
+
+      @if (error()) {
+        <div class="mt-6 flex items-start gap-2.5 rounded-xl bg-error-50 px-3.5 py-3 text-sm text-error-800" role="alert">
+          <mat-icon class="mt-0.5 size-4 shrink-0" svgIcon="circle-alert" />
+          {{ error() }}
+        </div>
+      }
+
+      <form class="mt-6 flex flex-col gap-4" (submit)="signIn(); $event.preventDefault()">
+        <mat-form-field appearance="outline">
+          <mat-label>Adresse e-mail</mat-label>
+          <input matInput type="email" autocomplete="username" [formField]="signInForm.email" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Mot de passe</mat-label>
+          <input
+            matInput
+            autocomplete="current-password"
+            [type]="hidePassword() ? 'password' : 'text'"
+            [formField]="signInForm.password" />
+          <button
+            matIconButton
+            matSuffix
+            type="button"
+            [attr.aria-label]="hidePassword() ? 'Afficher le mot de passe' : 'Masquer le mot de passe'"
+            (click)="hidePassword.set(!hidePassword())">
+            <mat-icon [svgIcon]="hidePassword() ? 'eye' : 'eye-off'" />
+          </button>
+        </mat-form-field>
+
+        <button matButton="filled" type="submit" class="mt-2 h-11" [disabled]="isLoading() || signInForm().invalid()">
+          <mat-icon [class.animate-spin]="isLoading()" [svgIcon]="isLoading() ? 'loader-circle' : 'log-in'" />
+          Se connecter
+        </button>
+      </form>
+
+      <a
+        class="mt-10 inline-flex items-center gap-1.5 text-sm font-medium text-neutral-500 hover:text-gray-950"
+        [href]="websiteUrl">
+        <mat-icon class="size-4" svgIcon="arrow-up-right" />
+        Site public du festival
+      </a>
+    </div>
+  </main>
+</div>

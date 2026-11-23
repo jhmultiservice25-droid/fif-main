@@ -1,0 +1,187 @@
+<div class="px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
+  <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="text-3xl font-semibold tracking-tight">Programme</h1>
+      <p class="mt-1 text-neutral-500">
+        Glissez une session pour la déplacer, tirez son bord inférieur pour changer sa durée, cliquez un créneau vide pour en créer une.
+      </p>
+    </div>
+    <div class="flex shrink-0 items-center gap-2">
+      <a matButton="outlined" routerLink="/programme/demandes">
+        <mat-icon svgIcon="inbox" />
+        Demandes
+        @if (totals().pending) {
+          <span class="ml-1 rounded-full bg-amber-500 px-1.5 text-xs leading-5 font-semibold text-white">{{ totals().pending }}</span>
+        }
+      </a>
+      <button matButton="filled" type="button" (click)="newSession()">
+        <mat-icon svgIcon="plus" />
+        Nouvelle session
+      </button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="h-[60vh] animate-pulse rounded-2xl bg-gray-100"></div>
+  } @else if (loadError()) {
+    <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-gray-300 p-12 text-center">
+      <p class="font-medium text-gray-950">{{ loadError() }}</p>
+      <button matButton="outlined" type="button" (click)="reload()">Réessayer</button>
+    </div>
+  } @else {
+    <!-- Toolbar -->
+    <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+      <div class="flex gap-1 rounded-2xl bg-gray-100 p-1" role="tablist" aria-label="Jours">
+        @for (day of days(); track day.date; let index = $index) {
+          <button
+            type="button"
+            role="tab"
+            class="flex flex-1 cursor-pointer flex-col items-start rounded-xl px-4 py-2 text-left transition lg:flex-none"
+            [class]="index === dayIndex() ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-900'"
+            [attr.aria-selected]="index === dayIndex()"
+            (click)="dayIndex.set(index)">
+            <span class="flex items-center gap-1.5 text-sm font-semibold text-gray-950">
+              {{ day.label }}
+              @if (dayStats()[index]?.conflicts) {
+                <span class="size-1.5 rounded-full bg-red-500" title="Conflits"></span>
+              }
+            </span>
+            <span class="text-xs">{{ dayLabel(day.date) }} · {{ dayStats()[index]?.sessions }} sessions</span>
+          </button>
+        }
+      </div>
+
+      <div class="flex flex-auto flex-wrap items-center gap-2">
+        <label class="relative min-w-48 flex-auto lg:max-w-72">
+          <mat-icon class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-400" svgIcon="search" />
+          <input
+            class="h-10 w-full rounded-xl border border-gray-200 bg-white pr-3 pl-9 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+            placeholder="Rechercher une session, un intervenant…"
+            [value]="search()"
+            (input)="search.set($any($event.target).value)" />
+        </label>
+        @for (option of [
+          { id: 'all', label: 'Toutes' },
+          { id: 'pending', label: 'Demandes en attente' },
+          { id: 'conflicts', label: 'Conflits · ' + totals().conflicts }
+        ]; track option.id) {
+          <button
+            type="button"
+            class="h-10 cursor-pointer rounded-xl border px-3 text-sm font-medium transition"
+            [class]="filter() === option.id ? 'border-gray-950 bg-gray-950 text-white' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'"
+            (click)="filter.set($any(option.id))">
+            {{ option.label }}
+          </button>
+        }
+        <span class="flex-auto"></span>
+        <div class="inline-flex rounded-xl border border-gray-200 bg-white p-0.5">
+          <button
+            type="button"
+            class="cursor-pointer rounded-lg p-2 transition"
+            [class]="effectiveView() === 'grid' ? 'bg-gray-100 text-gray-950' : 'text-gray-500'"
+            aria-label="Vue calendrier"
+            (click)="view.set('grid')">
+            <mat-icon class="size-4" svgIcon="calendar-days" />
+          </button>
+          <button
+            type="button"
+            class="cursor-pointer rounded-lg p-2 transition"
+            [class]="effectiveView() === 'list' ? 'bg-gray-100 text-gray-950' : 'text-gray-500'"
+            aria-label="Vue liste"
+            (click)="view.set('list')">
+            <mat-icon class="size-4" svgIcon="list" />
+          </button>
+        </div>
+      </div>
+    </div>
+
+    @if (pendingMove(); as pending) {
+      <div class="mb-4 flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center">
+        <mat-icon class="shrink-0 text-red-600" svgIcon="triangle-alert" />
+        <div class="min-w-0 flex-auto text-sm text-red-900">
+          <p class="font-semibold">Déplacement de « {{ pending.move.session.title }} » en conflit</p>
+          @for (conflict of pending.conflicts; track conflict.message) {
+            <p>{{ conflict.message }}</p>
+          }
+        </div>
+        <div class="flex shrink-0 gap-2">
+          <button matButton type="button" (click)="pendingMove.set(null)">Annuler</button>
+          <button matButton="filled" type="button" class="bg-red-600!" (click)="onMove(pending.move, true)">Confirmer quand même</button>
+        </div>
+      </div>
+    }
+
+    @if (effectiveView() === 'grid') {
+      <schedule-grid
+        [sessions]="daySessions()"
+        [rooms]="rooms()"
+        [selectedId]="editing()?.id ?? null"
+        (open)="openSession($event)"
+        (create)="newSession($event)"
+        (move)="onMove($event)" />
+    } @else {
+      <ul class="divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-200 bg-white">
+        @for (session of daySessions(); track session.id) {
+          @let tone = style(session.type);
+          <li>
+            <button type="button" class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition hover:bg-gray-50" (click)="openSession(session)">
+              <span class="size-2.5 shrink-0 rounded-full" [class]="session.status === 'CANCELLED' ? 'bg-gray-300' : tone.dot"></span>
+              <span class="w-24 shrink-0 text-sm font-semibold text-primary-700 tabular-nums">{{ range(session) }}</span>
+              <span class="min-w-0 flex-auto">
+                <span class="flex items-center gap-1.5">
+                  <span class="truncate font-medium text-gray-950" [class.line-through]="session.status === 'CANCELLED'">{{ session.title }}</span>
+                  @if (isBlocking(session)) {
+                    <mat-icon class="size-4 shrink-0 text-red-600" svgIcon="triangle-alert" />
+                  }
+                  @if (session.visibility === 'INVITE_ONLY') {
+                    <mat-icon class="size-3.5 shrink-0 text-gray-400" svgIcon="eye-off" />
+                  } @else if (session.admission === 'APPROVAL') {
+                    <mat-icon class="size-3.5 shrink-0 text-gray-400" svgIcon="lock" />
+                  }
+                </span>
+                <span class="block truncate text-xs text-gray-500">
+                  {{ typeLabels[session.type] ?? session.type }} · {{ session.room?.name ?? 'Sans salle' }}
+                  @if (session.speakers.length) {
+                    · {{ session.speakers[0].name }}{{ session.speakers.length > 1 ? ' +' + (session.speakers.length - 1) : '' }}
+                  }
+                </span>
+              </span>
+              <span class="hidden shrink-0 text-right text-xs text-gray-500 sm:block">
+                <span class="block font-semibold text-gray-950 tabular-nums">
+                  {{ session.counts.registered }}{{ session.capacity ? ' / ' + session.capacity : '' }}
+                </span>
+                inscrits
+              </span>
+              @if (session.counts.pending) {
+                <span class="shrink-0 rounded-full bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white">{{ session.counts.pending }}</span>
+              }
+              <mat-icon class="size-4 shrink-0 text-gray-300" svgIcon="chevron-right" />
+            </button>
+          </li>
+        } @empty {
+          <li class="px-6 py-14 text-center">
+            <p class="font-medium text-gray-950">Aucune session ne correspond.</p>
+            <button matButton="filled" type="button" class="mt-4" (click)="newSession()">Créer une session</button>
+          </li>
+        }
+      </ul>
+    }
+  }
+</div>
+
+<!-- Editor panel -->
+@if (panelOpen()) {
+  <div class="fixed inset-0 z-40 bg-gray-950/20 lg:bg-transparent" (click)="closePanel()" aria-hidden="true"></div>
+  <aside
+    class="fixed inset-y-0 right-0 z-50 w-full border-l border-gray-200 bg-white shadow-2xl sm:w-[30rem]"
+    role="dialog"
+    aria-label="Éditeur de session">
+    <session-editor
+      [session]="editing()"
+      [draft]="draft()"
+      [days]="days()"
+      [rooms]="rooms()"
+      (saved)="onSaved($event)"
+      (closed)="closePanel()" />
+  </aside>
+}

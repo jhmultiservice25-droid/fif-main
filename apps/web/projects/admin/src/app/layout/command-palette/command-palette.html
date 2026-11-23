@@ -1,0 +1,50 @@
+<div class="flex items-center gap-3 border-b border-gray-200 px-4">
+  <mat-icon class="size-5 shrink-0 text-neutral-400" svgIcon="search" />
+  <input
+    class="h-14 w-full bg-transparent text-base text-gray-950 outline-none placeholder:text-neutral-400"
+    placeholder="Aller à une page ou lancer une action…"
+    aria-label="Rechercher dans la console"
+    autocomplete="off"
+    spellcheck="false"
+    [value]="query()"
+    (input)="onInput($any($event.target).value)"
+    (keydown)="onKeydown($event)" />
+  <kbd class="hidden shrink-0 sm:inline-block">Échap</kbd>
+</div>
+
+<div class="max-h-[min(60vh,26rem)] overflow-y-auto p-2" role="listbox" aria-label="Résultats">
+  @for (group of groups(); track group.label) {
+    <p class="px-3 pt-3 pb-1.5 text-xs font-medium text-neutral-500">{{ group.label }}</p>
+    @for (entry of group.entries; track entry.item.id) {
+      <button
+        type="button"
+        role="option"
+        class="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors"
+        [class]="entry.index === active() ? 'bg-primary-50 text-primary-900' : 'text-gray-800'"
+        [attr.aria-selected]="entry.index === active()"
+        (mouseenter)="active.set(entry.index)"
+        (click)="select(entry.item)"
+        #option>
+        <span
+          class="flex size-8 shrink-0 items-center justify-center rounded-lg"
+          [class]="entry.index === active() ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-500'">
+          <mat-icon class="size-4" [svgIcon]="entry.item.icon" />
+        </span>
+        <span class="flex-auto font-medium">{{ entry.item.label }}</span>
+        @if (entry.index === active()) {
+          <mat-icon class="size-4 text-primary-600" svgIcon="corner-down-left" />
+        }
+      </button>
+    }
+  } @empty {
+    <div class="px-6 py-12 text-center">
+      <p class="text-sm font-medium text-gray-700">Aucun résultat</p>
+      <p class="mt-1 text-sm text-neutral-500">Essayez « participants », « badge » ou « speaker ».</p>
+    </div>
+  }
+</div>
+
+<div class="hidden items-center gap-4 border-t border-gray-100 px-4 py-2.5 text-xs text-neutral-500 sm:flex">
+  <span class="flex items-center gap-1.5"><kbd>↑</kbd><kbd>↓</kbd> naviguer</span>
+  <span class="flex items-center gap-1.5"><kbd>↵</kbd> ouvrir</span>
+</div>

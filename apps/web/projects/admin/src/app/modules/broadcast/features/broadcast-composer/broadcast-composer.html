@@ -1,0 +1,99 @@
+<div class="px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
+  <div class="mb-8">
+    <h1 class="text-3xl font-semibold tracking-tight">Diffusion</h1>
+    <p class="mt-1 text-neutral-500">Rédigez un e-mail et envoyez-le à une ou plusieurs audiences du festival.</p>
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[22rem_1fr]">
+    <mat-card appearance="outlined">
+      <mat-card-content class="pt-4">
+        <p class="text-sm font-semibold text-gray-950">1. Destinataires</p>
+        <p class="mt-1 text-xs text-neutral-500">Sélectionnez une ou plusieurs audiences.</p>
+
+        @if (audiencesResource.isLoading()) {
+          <p class="mt-5 animate-pulse text-sm text-neutral-500">Chargement des audiences…</p>
+        } @else {
+          <div class="mt-4 flex flex-col gap-2">
+            @for (audience of audiences(); track audience.id) {
+              <button
+                type="button"
+                class="flex items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50"
+                [class.border-primary-500]="isSelected(audience.id)"
+                [class.bg-primary-50]="isSelected(audience.id)"
+                [class.border-gray-200]="!isSelected(audience.id)"
+                [class.hover:border-gray-300]="!isSelected(audience.id)"
+                [disabled]="audience.count === 0"
+                [attr.aria-pressed]="isSelected(audience.id)"
+                (click)="toggle(audience.id)">
+                <span
+                  class="flex size-9 shrink-0 items-center justify-center rounded-lg"
+                  [class.bg-primary-600]="isSelected(audience.id)"
+                  [class.text-white]="isSelected(audience.id)"
+                  [class.bg-gray-100]="!isSelected(audience.id)"
+                  [class.text-gray-600]="!isSelected(audience.id)">
+                  <mat-icon class="size-4" [svgIcon]="isSelected(audience.id) ? 'check' : icon(audience.id)" />
+                </span>
+                <span class="min-w-0 flex-auto">
+                  <span class="block text-sm font-medium text-gray-950">{{ audience.label }}</span>
+                  <span class="block text-xs text-neutral-500">
+                    {{ audience.count === 0 ? 'Aucune adresse' : audience.count + ' adresse(s)' }}
+                  </span>
+                </span>
+              </button>
+            }
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined">
+      <mat-card-content class="pt-4">
+        <p class="text-sm font-semibold text-gray-950">2. Message</p>
+        <p class="mt-1 text-xs text-neutral-500">
+          Chaque e-mail commence par « Bonjour [nom], » et se termine par la signature de l'équipe FIF 2026.
+        </p>
+
+        <form class="mt-3 flex flex-col" (submit)="askConfirmation(); $event.preventDefault()">
+          <mat-form-field appearance="outline">
+            <mat-label>Objet</mat-label>
+            <input matInput [formField]="broadcastForm.subject" placeholder="Ex. Informations pratiques — FIF 2026" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Message</mat-label>
+            <textarea matInput rows="12" [formField]="broadcastForm.body"></textarea>
+            <mat-hint>Texte simple — les retours à la ligne sont conservés.</mat-hint>
+          </mat-form-field>
+
+          <div class="mt-6 flex flex-col gap-4 border-t border-gray-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-sm text-neutral-600">
+              @if (recipientCount()) {
+                <span class="font-semibold text-gray-950">{{ recipientCount() }}</span> destinataire(s) au maximum — une
+                personne présente dans deux audiences ne reçoit qu'un seul e-mail.
+              } @else {
+                Sélectionnez au moins une audience.
+              }
+            </p>
+
+            @if (isConfirming()) {
+              <div class="flex shrink-0 items-center gap-2">
+                <button matButton type="button" [disabled]="store.isSending()" (click)="isConfirming.set(false)">
+                  Annuler
+                </button>
+                <button matButton="filled" type="button" [disabled]="store.isSending()" (click)="send()">
+                  <mat-icon [class.animate-spin]="store.isSending()" [svgIcon]="store.isSending() ? 'loader-circle' : 'send'" />
+                  {{ store.isSending() ? 'Envoi en cours…' : 'Confirmer l’envoi à ' + recipientCount() }}
+                </button>
+              </div>
+            } @else {
+              <button matButton="filled" type="submit" class="shrink-0" [disabled]="!canSend()">
+                <mat-icon svgIcon="megaphone" />
+                Envoyer
+              </button>
+            }
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

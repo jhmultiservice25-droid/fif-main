@@ -1,0 +1,131 @@
+<div class="px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
+  <div class="mb-8">
+    <h1 class="text-3xl font-semibold tracking-tight">Contrôle d'accès</h1>
+    <p class="mt-1 text-neutral-500">Scannez le QR d'un badge, vérifiez l'identité, confirmez l'entrée.</p>
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[1fr_22rem]">
+    <div class="flex flex-col gap-6">
+      <mat-card appearance="outlined">
+        <mat-card-content class="pt-4">
+          <div class="flex items-start gap-4">
+            <span class="hidden size-12 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-white sm:flex">
+              <mat-icon svgIcon="scan-line" />
+            </span>
+            <div class="min-w-0 flex-auto">
+              <p class="font-semibold text-gray-950">Scanner un badge</p>
+              <p class="mt-0.5 text-sm text-neutral-500">
+                Avec l'appareil photo du téléphone, le QR ouvre cette page et lance la vérification. Vous pouvez aussi
+                saisir ou coller le code ci-dessous.
+              </p>
+
+              <form class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end" (submit)="lookup(); $event.preventDefault()">
+                <mat-form-field appearance="outline" class="flex-auto">
+                  <mat-label>Code du badge</mat-label>
+                  <input #tokenInput matInput [formField]="scanForm.token" autocomplete="off" placeholder="Code ou lien scanné" />
+                </mat-form-field>
+                <button matButton="filled" type="submit" class="h-10 shrink-0" [disabled]="store.isLoading()">
+                  <mat-icon [class.animate-spin]="store.isLoading()" [svgIcon]="store.isLoading() ? 'loader-circle' : 'search'" />
+                  Vérifier
+                </button>
+              </form>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      @if (store.current(); as pass) {
+        <mat-card appearance="outlined" class="overflow-hidden">
+          <div
+            class="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold"
+            [class.bg-green-600]="!pass.checkedInAt"
+            [class.bg-amber-500]="pass.checkedInAt"
+            [class.text-white]="true">
+            <mat-icon class="size-4" [svgIcon]="pass.checkedInAt ? 'triangle-alert' : 'badge-check'" />
+            @if (pass.checkedInAt) {
+              Badge déjà enregistré le {{ pass.checkedInAt | date: 'dd/MM à HH:mm' }}
+            } @else {
+              Badge valide — entrée non encore enregistrée
+            }
+          </div>
+
+          <mat-card-content class="pt-5">
+            <div class="flex flex-col gap-5 sm:flex-row sm:items-center">
+              <span
+                class="flex size-16 shrink-0 items-center justify-center rounded-full bg-primary-50 text-xl font-bold text-primary-700">
+                {{ initials(pass.fullName) }}
+              </span>
+              <div class="min-w-0 flex-auto">
+                <p class="truncate text-2xl font-semibold tracking-tight text-gray-950">{{ pass.fullName }}</p>
+                <p class="truncate text-sm text-neutral-500">{{ pass.email }}</p>
+                <div class="mt-2 flex flex-wrap items-center gap-2">
+                  <span class="rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">
+                    {{ kindLabel(pass.kind) }}
+                  </span>
+                  @if (pass.emailSentAt) {
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
+                      <mat-icon class="size-3.5" svgIcon="mail-check" />
+                      E-mail envoyé le {{ pass.emailSentAt | date: 'dd/MM à HH:mm' }}
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+                      <mat-icon class="size-3.5" svgIcon="mail-warning" />
+                      E-mail non envoyé
+                    </span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-6 flex flex-wrap justify-end gap-3 border-t border-gray-100 pt-5">
+              <button matButton="outlined" type="button" [disabled]="store.isSendingEmail()" (click)="resendEmail()">
+                <mat-icon [class.animate-spin]="store.isSendingEmail()" [svgIcon]="store.isSendingEmail() ? 'loader-circle' : 'mail'" />
+                {{ pass.emailSentAt ? "Renvoyer l'e-mail" : "Envoyer l'e-mail" }}
+              </button>
+              @if (!pass.checkedInAt) {
+                <button matButton="filled" type="button" [disabled]="store.isLoading()" (click)="confirm()">
+                  <mat-icon svgIcon="check" />
+                  Confirmer l'entrée
+                </button>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+      } @else if (!store.isLoading()) {
+        <div class="flex flex-col items-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
+          <mat-icon class="text-gray-400" svgIcon="qr-code" />
+          <p class="mt-3 font-medium text-gray-700">En attente d'un badge</p>
+          <p class="mt-1 text-sm text-gray-500">Le détenteur du badge s'affichera ici avant toute confirmation.</p>
+        </div>
+      }
+    </div>
+
+    <mat-card appearance="outlined" class="h-fit">
+      <mat-card-content class="pt-4">
+        <div class="flex items-center justify-between">
+          <p class="font-semibold text-gray-950">Entrées récentes</p>
+          <span class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
+            {{ recentResource.value()?.data?.length ?? 0 }}
+          </span>
+        </div>
+        <div class="mt-3 flex flex-col divide-y divide-gray-100">
+          @for (pass of recentResource.value()?.data ?? []; track pass.id) {
+            <div class="flex items-center gap-3 py-2.5">
+              <span
+                class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-50 text-xs font-bold text-primary-700">
+                {{ initials(pass.fullName) }}
+              </span>
+              <div class="min-w-0 flex-auto">
+                <p class="truncate text-sm font-medium text-gray-950">{{ pass.fullName }}</p>
+                <p class="text-xs text-neutral-500">{{ kindLabel(pass.kind) }}</p>
+              </div>
+              <p class="shrink-0 text-xs text-neutral-500">{{ pass.checkedInAt | date: 'HH:mm' }}</p>
+            </div>
+          } @empty {
+            <p class="py-6 text-center text-sm text-neutral-500">Aucune entrée enregistrée pour le moment.</p>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Speaker" ADD COLUMN "days" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];

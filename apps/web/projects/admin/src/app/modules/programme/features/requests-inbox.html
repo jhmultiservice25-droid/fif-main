@@ -1,0 +1,87 @@
+<div class="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:py-8">
+  <div class="mb-6">
+    <h1 class="text-3xl font-semibold tracking-tight">Demandes de participation</h1>
+    <p class="mt-1 text-neutral-500">Sessions sur validation : acceptez ou refusez, une par une ou en lot. Chaque personne est prévenue.</p>
+  </div>
+
+  @if (selected().length) {
+    <div class="sticky top-0 z-10 mb-4 flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white/95 p-3 shadow-sm backdrop-blur sm:flex-row sm:items-center">
+      <p class="flex-auto text-sm font-medium text-gray-950">{{ selected().length }} sélectionnée(s)</p>
+      @if (declining()) {
+        <input
+          class="h-10 flex-auto rounded-xl border border-gray-200 px-3 text-sm outline-none focus:border-primary-500"
+          placeholder="Message pour les personnes refusées (optionnel)"
+          [value]="note()"
+          (input)="note.set($any($event.target).value)" />
+        <button matButton type="button" (click)="declining.set(false)">Retour</button>
+        <button matButton="filled" type="button" class="bg-red-600!" [disabled]="busy()" (click)="decide('DECLINE')">Refuser</button>
+      } @else {
+        <button matButton="outlined" type="button" [disabled]="busy()" (click)="declining.set(true)">
+          <mat-icon svgIcon="x" /> Refuser
+        </button>
+        <button matButton="filled" type="button" [disabled]="busy()" (click)="decide('APPROVE')">
+          <mat-icon svgIcon="check" /> Accepter
+        </button>
+      }
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="space-y-3">
+      @for (row of [1, 2]; track row) {
+        <div class="h-40 animate-pulse rounded-2xl bg-gray-100"></div>
+      }
+    </div>
+  } @else {
+    @for (group of groups(); track group.session.id) {
+      <section class="mb-4 overflow-hidden rounded-2xl border border-gray-200 bg-white">
+        <header class="flex items-center gap-3 border-b border-gray-100 bg-gray-50/60 px-4 py-3">
+          <input type="checkbox" class="size-4 accent-primary-700" [checked]="groupChecked(group)" (change)="toggleGroup(group)" aria-label="Tout sélectionner" />
+          <div class="min-w-0 flex-auto">
+            <p class="truncate font-semibold text-gray-950">{{ group.session.title }}</p>
+            <p class="text-xs text-gray-500">
+              {{ dayOf(group.session.startsAt) }} · {{ range(group.session) }}{{ group.session.room ? ' · ' + group.session.room : '' }}
+              @if (group.session.capacity) {
+                · {{ group.session.capacity }} places
+              }
+            </p>
+          </div>
+          <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900">{{ group.requests.length }}</span>
+        </header>
+        <ul class="divide-y divide-gray-100">
+          @for (request of group.requests; track request.registrationId) {
+            <li class="flex items-center gap-3 px-4 py-3">
+              <input type="checkbox" class="size-4 accent-primary-700" [checked]="selected().includes(request.registrationId)" (change)="toggle(request.registrationId)" [attr.aria-label]="request.name" />
+              <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-50 text-sm font-semibold text-primary-700">
+                {{ request.name.charAt(0) }}
+              </span>
+              <div class="min-w-0 flex-auto">
+                <p class="truncate text-sm font-medium text-gray-950">{{ request.name }}</p>
+                <p class="truncate text-xs text-gray-500">
+                  {{ request.email }}{{ request.organization ? ' · ' + request.organization : '' }}{{ request.city ? ' · ' + request.city : '' }}
+                </p>
+              </div>
+              <span class="hidden shrink-0 text-xs text-gray-500 sm:block">{{ request.requestedAt | date: 'dd/MM HH:mm' }}</span>
+              <div class="flex shrink-0 gap-1">
+                <button matIconButton type="button" aria-label="Refuser" [disabled]="busy()" (click)="decide('DECLINE', [request.registrationId])">
+                  <mat-icon class="text-red-600" svgIcon="x" />
+                </button>
+                <button matIconButton type="button" aria-label="Accepter" [disabled]="busy()" (click)="decide('APPROVE', [request.registrationId])">
+                  <mat-icon class="text-emerald-600" svgIcon="check" />
+                </button>
+              </div>
+            </li>
+          }
+        </ul>
+      </section>
+    } @empty {
+      <div class="flex flex-col items-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-16 text-center">
+        <span class="flex size-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+          <mat-icon svgIcon="inbox" />
+        </span>
+        <p class="mt-4 font-medium text-gray-950">Aucune demande en attente</p>
+        <p class="mt-1 text-sm text-gray-500">Les demandes pour les sessions « sur validation » apparaîtront ici.</p>
+      </div>
+    }
+  }
+</div>

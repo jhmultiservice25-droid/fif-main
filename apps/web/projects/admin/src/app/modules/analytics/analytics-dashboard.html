@@ -1,0 +1,206 @@
+<div class="px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
+  <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="text-3xl font-semibold tracking-tight">Audience</h1>
+      <p class="mt-1 text-neutral-500">Fréquentation du site public et parcours d’inscription.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="inline-flex rounded-xl bg-gray-100 p-1">
+        @for (item of periods; track item.id) {
+          <button
+            type="button"
+            class="cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition"
+            [class]="period() === item.id ? 'bg-white text-gray-950 shadow-sm' : 'text-gray-600'"
+            (click)="period.set(item.id)">
+            {{ item.label }}
+          </button>
+        }
+      </div>
+      <button matIconButton type="button" aria-label="Actualiser" [disabled]="resource.isLoading()" (click)="resource.reload()">
+        <mat-icon [class.animate-spin]="resource.isLoading()" svgIcon="refresh-cw" />
+      </button>
+    </div>
+  </div>
+
+  @if (resource.isLoading() && !data()) {
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      @for (item of [1, 2, 3, 4]; track item) {
+        <div class="h-28 animate-pulse rounded-2xl bg-gray-100"></div>
+      }
+    </div>
+    <div class="mt-4 h-80 animate-pulse rounded-2xl bg-gray-100"></div>
+  } @else if (data(); as report) {
+    @if (!report.configured) {
+      <div class="mx-auto max-w-2xl">
+        <div class="rounded-2xl border border-gray-200 bg-white p-6">
+          <div class="flex items-start gap-4">
+            <span
+              class="flex size-11 shrink-0 items-center justify-center rounded-2xl"
+              [class]="report.trackingActive ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-500'">
+              <mat-icon svgIcon="chart-no-axes-combined" />
+            </span>
+            <div class="min-w-0">
+              <h2 class="font-semibold text-gray-950">
+                {{ report.trackingActive ? 'Mesure active, lecture à finaliser' : 'Mesure d’audience à configurer' }}
+              </h2>
+              <p class="mt-1 text-sm text-gray-600">{{ report.message }}</p>
+            </div>
+          </div>
+
+          <ul class="mt-5 divide-y divide-gray-100 rounded-xl border border-gray-200">
+            @for (item of report.checklist ?? []; track item.key) {
+              <li class="flex items-start gap-3 px-4 py-3">
+                <mat-icon
+                  class="mt-0.5 size-4 shrink-0"
+                  [class]="item.present ? 'text-emerald-600' : 'text-gray-300'"
+                  [svgIcon]="item.present ? 'circle-check' : 'circle'" />
+                <span class="min-w-0 flex-auto">
+                  <span class="block text-sm font-medium" [class]="item.present ? 'text-gray-950' : 'text-gray-500'">
+                    {{ item.label }}
+                  </span>
+                  <span class="block text-xs text-gray-500">{{ item.hint }}</span>
+                </span>
+                <span
+                  class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium"
+                  [class]="item.present ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'">
+                  {{ item.present ? 'Fourni' : 'Manquant' }}
+                </span>
+              </li>
+            }
+          </ul>
+
+          <p class="mt-4 text-sm text-gray-600">
+            {{ report.missingCount }} réglage(s) à fournir. La marche à suivre, destinée à la personne qui gère le
+            compte Google, est dans <code class="rounded bg-gray-100 px-1.5 py-0.5 text-xs">{{ report.guide }}</code>.
+            Une fois les valeurs ajoutées sur le serveur et l’API redémarrée, cette page affiche les statistiques.
+          </p>
+          @if (report.trackingActive) {
+            <p class="mt-2 text-sm text-gray-600">
+              Les visites sont déjà comptées sous
+              <strong class="text-gray-950">{{ report.measurementId }}</strong> et restent consultables sur
+              analytics.google.com.
+            </p>
+          }
+        </div>
+      </div>
+    } @else {
+      @if (totals(); as stats) {
+        <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          @for (card of [
+            { label: 'Visiteurs', value: stats.users | number, hint: (stats.newUsers | number) + ' nouveaux' },
+            { label: 'Visites', value: stats.sessions | number, hint: (stats.pageViews | number) + ' pages vues' },
+            { label: 'Temps moyen / page', value: duration(stats.averageTimePerPage), hint: 'par visite : ' + duration(stats.averageSessionDuration) },
+            { label: 'Taux de rebond', value: (stats.bounceRate * 100 | number: '1.0-1') + ' %', hint: 'visites d’une seule page' }
+          ]; track card.label) {
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
+              <p class="text-sm text-neutral-500">{{ card.label }}</p>
+              <p class="mt-2 text-3xl font-semibold tracking-tight text-gray-950 tabular-nums">{{ card.value }}</p>
+              <p class="mt-1 truncate text-xs text-neutral-500">{{ card.hint }}</p>
+            </div>
+          }
+        </div>
+      }
+
+      <section class="mt-4 rounded-2xl border border-gray-200 bg-white p-5">
+        <h2 class="font-semibold text-gray-950">Visites</h2>
+        <p class="mt-0.5 text-sm text-neutral-500">Visiteurs et visites, par jour</p>
+        <apx-chart
+          [series]="series()"
+          [chart]="chart"
+          [colors]="colors"
+          [stroke]="stroke"
+          [grid]="grid"
+          [dataLabels]="dataLabels"
+          [xaxis]="axis()" />
+      </section>
+
+      <div class="mt-4 grid gap-4 xl:grid-cols-2">
+        <section class="rounded-2xl border border-gray-200 bg-white p-5">
+          <h2 class="font-semibold text-gray-950">Actions suivies</h2>
+          <p class="mt-0.5 text-sm text-neutral-500">Candidatures, inscriptions et mises en relation</p>
+          <ul class="mt-4 divide-y divide-gray-100">
+            @for (event of trackedEvents(); track event.name) {
+              <li class="flex items-center gap-3 py-2.5">
+                <span class="min-w-0 flex-auto truncate text-sm font-medium text-gray-950">{{ event.label }}</span>
+                <span class="shrink-0 text-xs text-neutral-500">{{ event.users | number }} pers.</span>
+                <span class="w-14 shrink-0 text-right text-sm font-semibold text-gray-950 tabular-nums">
+                  {{ event.count | number }}
+                </span>
+              </li>
+            } @empty {
+              <li class="py-8 text-center text-sm text-neutral-500">
+                Aucune action enregistrée sur la période — les événements apparaissent quelques heures après les
+                premières visites.
+              </li>
+            }
+          </ul>
+          @if (otherEvents().length) {
+            <p class="mt-3 border-t border-gray-100 pt-3 text-xs text-neutral-500">
+              Autres événements : {{ otherEvents()[0].label }}{{ otherEvents().length > 1 ? ' +' + (otherEvents().length - 1) : '' }}
+            </p>
+          }
+        </section>
+
+        <section class="rounded-2xl border border-gray-200 bg-white p-5">
+          <h2 class="font-semibold text-gray-950">Pages les plus vues</h2>
+          <p class="mt-0.5 text-sm text-neutral-500">Avec le temps moyen passé sur chacune</p>
+          <ul class="mt-4 divide-y divide-gray-100">
+            @for (page of report.pages ?? []; track page.path) {
+              <li class="flex items-center gap-3 py-2.5">
+                <span class="min-w-0 flex-auto truncate text-sm text-gray-950">{{ page.path }}</span>
+                <span class="shrink-0 text-xs text-neutral-500">{{ duration(page.averageTime) }}</span>
+                <span class="w-14 shrink-0 text-right text-sm font-semibold text-gray-950 tabular-nums">
+                  {{ page.views | number }}
+                </span>
+              </li>
+            } @empty {
+              <li class="py-8 text-center text-sm text-neutral-500">Aucune page vue sur la période.</li>
+            }
+          </ul>
+        </section>
+
+        <section class="rounded-2xl border border-gray-200 bg-white p-5">
+          <h2 class="font-semibold text-gray-950">D’où viennent les visiteurs</h2>
+          <ul class="mt-4 space-y-3">
+            @for (source of report.sources ?? []; track source.label) {
+              <li>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="truncate text-gray-950">{{ source.label }}</span>
+                  <span class="shrink-0 font-semibold tabular-nums">{{ source.sessions | number }}</span>
+                </div>
+                <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-gray-100">
+                  <div class="h-full rounded-full bg-primary-600" [style.width.%]="(source.sessions / maxSource()) * 100"></div>
+                </div>
+              </li>
+            } @empty {
+              <li class="py-8 text-center text-sm text-neutral-500">Pas encore de données.</li>
+            }
+          </ul>
+        </section>
+
+        <section class="rounded-2xl border border-gray-200 bg-white p-5">
+          <h2 class="font-semibold text-gray-950">Appareils</h2>
+          <ul class="mt-4 divide-y divide-gray-100">
+            @for (device of report.devices ?? []; track device.label) {
+              <li class="flex items-center justify-between py-2.5 text-sm">
+                <span class="text-gray-950 capitalize">{{ device.label }}</span>
+                <span class="font-semibold tabular-nums">{{ device.sessions | number }}</span>
+              </li>
+            } @empty {
+              <li class="py-8 text-center text-sm text-neutral-500">Pas encore de données.</li>
+            }
+          </ul>
+          <p class="mt-4 border-t border-gray-100 pt-3 text-xs text-neutral-500">
+            Mesure : {{ report.measurementId }} · actualisé {{ report.refreshedAt | date: 'dd/MM à HH:mm' }} ·
+            données mises en cache 10 minutes
+          </p>
+        </section>
+      </div>
+    }
+  } @else {
+    <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-gray-300 p-12 text-center">
+      <p class="font-medium text-gray-950">Impossible de charger les statistiques d’audience.</p>
+      <button matButton="outlined" type="button" (click)="resource.reload()">Réessayer</button>
+    </div>
+  }
+</div>

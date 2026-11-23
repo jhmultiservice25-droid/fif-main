@@ -1,0 +1,82 @@
+@defer (on immediate) {
+  <mat-sidenav-container class="h-dvh bg-white!">
+    <mat-sidenav
+      class="w-64 border-0! bg-primary-950!"
+      fixedInViewport
+      [mode]="isMobile() ? 'over' : 'side'"
+      [opened]="!isMobile()"
+      [disableClose]="!isMobile()"
+      #sidenav="matSidenav">
+      <div class="flex h-full w-full flex-col bg-primary-950 text-white">
+        <div class="px-4 pt-5">
+          <a routerLink="/" class="flex items-center gap-2.5 px-1">
+            <img src="/images/favicon.png" alt="" class="size-8 object-contain" />
+            <span class="leading-tight">
+              <span class="block font-bold tracking-tight">FIF 2026</span>
+              <span class="block text-xs text-primary-100/60">Console d’organisation</span>
+            </span>
+          </a>
+
+          <button
+            type="button"
+            class="mt-5 flex w-full cursor-pointer items-center gap-2.5 rounded-lg bg-white/[0.06] px-3 py-2 text-sm text-primary-100/70 ring-1 ring-white/10 transition-colors hover:bg-white/10 hover:text-white"
+            (click)="openPalette()">
+            <mat-icon class="size-4" svgIcon="search" />
+            Rechercher…
+            <span class="ml-auto text-xs text-primary-100/50">{{ isMac ? '⌘K' : 'Ctrl K' }}</span>
+          </button>
+        </div>
+
+        <navigation class="mt-4 flex-auto overflow-y-auto pb-4" [items]="navigation" />
+
+        <div class="border-t border-white/10 p-2">
+          <a
+            class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-primary-100/70 transition-colors hover:bg-white/10 hover:text-white"
+            target="_blank"
+            rel="noopener"
+            [href]="websiteUrl">
+            <mat-icon class="size-4" svgIcon="external-link" />
+            Voir le site public
+          </a>
+          <user roleLabel="Administrateur" />
+        </div>
+      </div>
+    </mat-sidenav>
+
+    <mat-sidenav-content class="flex h-dvh flex-col overflow-hidden">
+      <header class="flex h-14 shrink-0 items-center gap-2 border-b border-gray-200 bg-white px-3 sm:px-4">
+        <button
+          matIconButton
+          type="button"
+          [attr.aria-label]="isMobile() ? 'Ouvrir le menu' : 'Afficher ou masquer le menu'"
+          (click)="sidenav.toggle()">
+          <mat-icon [svgIcon]="isMobile() ? 'menu' : 'panel-left'" />
+        </button>
+        <div class="mx-1 hidden h-5 border-l border-gray-200 sm:block"></div>
+        <p class="min-w-0 truncate font-semibold text-gray-950">{{ pageTitle() }}</p>
+
+        <div class="flex-auto"></div>
+
+        <button matIconButton type="button" class="lg:hidden!" aria-label="Rechercher" (click)="openPalette()">
+          <mat-icon svgIcon="search" />
+        </button>
+        <a matButton="filled" routerLink="/checkin" class="hidden! sm:inline-flex!">
+          <mat-icon svgIcon="scan-line" />
+          Scanner un badge
+        </a>
+        <a matIconButton routerLink="/checkin" class="sm:hidden!" aria-label="Scanner un badge">
+          <mat-icon svgIcon="scan-line" />
+        </a>
+        <notification-bell scope="admin" />
+      </header>
+
+      <main class="min-h-0 flex-auto overflow-y-auto">
+        <router-outlet />
+      </main>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+} @placeholder {
+  <app-page-loader />
+} @loading (minimum 300ms) {
+  <app-page-loader />
+}

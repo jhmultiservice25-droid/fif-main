@@ -1,0 +1,155 @@
+<section class="scroll-mt-20 bg-white py-16 sm:py-20" id="programme" aria-labelledby="programme-title">
+  <div class="mx-auto max-w-5xl px-5 sm:px-8">
+    <header class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p class="text-sm font-semibold tracking-[0.2em] text-primary-700 uppercase">Programme</p>
+        <h2 id="programme-title" class="mt-3 text-3xl font-bold tracking-tight text-gray-950 sm:text-4xl">
+          {{ days().length }} jours à {{ festival().city }}
+        </h2>
+        <p class="mt-2 text-gray-600">{{ festival().dateLabel }} · choisissez vos sessions, jour par jour.</p>
+      </div>
+      <button
+        type="button"
+        class="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-primary-700 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-800 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:outline-none"
+        (click)="participate()">
+        Participer
+        <mat-icon class="size-4" svgIcon="arrow-right" />
+      </button>
+    </header>
+
+    @if (programmeResource.isLoading() && !programmeResource.hasValue()) {
+      <div class="mt-10 h-96 animate-pulse rounded-2xl bg-gray-100" aria-label="Chargement du programme"></div>
+    } @else if (activeDay(); as day) {
+      <!-- Notebook tabs -->
+      <div class="relative z-10 mt-10 flex gap-1.5" role="tablist" aria-label="Jours du festival">
+        @for (item of days(); track item.date; let index = $index) {
+          <button
+            type="button"
+            role="tab"
+            class="relative -mb-px flex flex-1 flex-col items-start rounded-t-2xl border px-4 pt-3 pb-3 text-left transition-colors sm:flex-none sm:px-6"
+            [class]="
+              index === activeIndex()
+                ? 'border-gray-200 border-b-white bg-white text-gray-950'
+                : 'border-transparent bg-gray-100 text-gray-500 hover:bg-gray-200/70 hover:text-gray-800'
+            "
+            [attr.aria-selected]="index === activeIndex()"
+            [attr.id]="'programme-tab-' + index"
+            (click)="selectDay(index)">
+            <span class="text-sm font-bold">{{ item.label }}</span>
+            <span class="text-xs">{{ dayLabel(item.date) }}</span>
+          </button>
+        }
+      </div>
+
+      <div
+        class="overflow-hidden rounded-tr-2xl rounded-b-2xl border border-gray-200 bg-white [perspective:1200px]"
+        role="tabpanel"
+        [attr.aria-labelledby]="'programme-tab-' + activeIndex()"
+        (touchstart)="onTouchStart($event)"
+        (touchend)="onTouchEnd($event)">
+        @for (current of [day]; track current.date) {
+          <div [class]="direction() === 'next' ? 'day-in-next' : 'day-in-prev'">
+            <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 sm:px-6">
+              <p class="font-semibold text-gray-950">{{ current.theme }}</p>
+              <p class="shrink-0 text-sm text-gray-500">{{ current.sessions.length }} sessions</p>
+            </div>
+
+            <ul class="divide-y divide-gray-100">
+              @for (slot of slots(); track slot.key) {
+                @let isOpen = openKey() === slot.key;
+                @let single = slot.sessions.length === 1 ? slot.sessions[0] : null;
+                <li>
+                  <button
+                    type="button"
+                    class="flex w-full items-center gap-4 px-5 py-3.5 text-left transition-colors hover:bg-gray-50 sm:px-6"
+                    [attr.aria-expanded]="isOpen"
+                    (click)="toggle(slot.key)">
+                    <span class="w-24 shrink-0 text-sm font-semibold text-primary-700 tabular-nums sm:w-28">
+                      {{ range(slot) }}
+                    </span>
+                    <span class="min-w-0 flex-auto">
+                      @if (single) {
+                        <span
+                          class="block truncate font-medium text-gray-950"
+                          [class.line-through]="single.status === 'CANCELLED'">
+                          {{ single.title }}
+                        </span>
+                        <span class="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
+                          {{ typeLabels[single.type] ?? single.type }}
+                          @if (single.room) {
+                            <span>· {{ single.room.name }}</span>
+                          }
+                          @if (single.status === 'CANCELLED') {
+                            <span class="font-semibold text-red-600">· Annulé</span>
+                          } @else if (single.admission === 'APPROVAL') {
+                            <span class="inline-flex items-center gap-1 font-medium text-amber-700">
+                              · <mat-icon class="size-3" svgIcon="lock" /> Sur validation
+                            </span>
+                          }
+                        </span>
+                      } @else {
+                        <span class="block truncate font-medium text-gray-950">
+                          {{ slot.sessions.length }} sessions en parallèle
+                        </span>
+                        <span class="mt-0.5 block truncate text-xs text-gray-500">
+                          {{ slot.sessions[0].title }}, {{ slot.sessions[1].title }}…
+                        </span>
+                      }
+                    </span>
+                    <mat-icon
+                      class="size-4 shrink-0 text-gray-400 transition-transform duration-200"
+                      [class.rotate-180]="isOpen"
+                      svgIcon="chevron-down" />
+                  </button>
+
+                  @if (isOpen) {
+                    <div class="px-5 pb-4 sm:px-6 sm:pl-36">
+                      @for (session of slot.sessions; track session.id) {
+                        <div class="py-2" [class.border-t]="!$first" [class.border-gray-100]="!$first">
+                          @if (!single) {
+                            <p class="text-sm font-medium text-gray-950">
+                              {{ session.title }}
+                              @if (session.admission === 'APPROVAL') {
+                                <mat-icon class="ml-1 size-3 text-amber-700" svgIcon="lock" />
+                              }
+                            </p>
+                          }
+                          <p class="text-sm leading-6 text-gray-600">{{ session.description }}</p>
+                          @if (session.status === 'CANCELLED' && session.cancelReason) {
+                            <p class="mt-1 text-sm font-medium text-red-600">{{ session.cancelReason }}</p>
+                          }
+                          @if (session.speakers.length) {
+                            <p class="mt-1 text-xs text-gray-500">
+                              Avec
+                              @for (speaker of session.speakers; track speaker.id) {
+                                <span class="font-medium text-gray-700">{{ speaker.name }}</span>{{ $last ? '' : ', ' }}
+                              }
+                            </p>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                </li>
+              }
+            </ul>
+
+            <div class="flex flex-col gap-3 border-t border-gray-100 bg-gray-50/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <p class="text-sm text-gray-600">Choisissez vos sessions pour ce jour et les suivants, en une seule inscription.</p>
+              <button
+                type="button"
+                class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-gray-950 px-5 text-sm font-semibold text-white transition hover:bg-gray-800"
+                (click)="participate()">
+                Participer — {{ current.label }}
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <p class="mt-10 rounded-2xl border border-dashed border-gray-300 p-8 text-center text-gray-500">
+        Le programme sera publié très prochainement.
+      </p>
+    }
+  </div>
+</section>

@@ -102,6 +102,26 @@ export class InnovatorsService {
     return { items, total, page, pageSize };
   }
 
+  async adminListInnovators(page: number, pageSize: number) {
+    const [items, total] = await Promise.all([
+      this.prisma.innovatorProfile.findMany({
+        include: { projects: { select: { title: true, status: true } } },
+        orderBy: { updatedAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.innovatorProfile.count(),
+    ]);
+    return { items, total, page, pageSize };
+  }
+
+  async adminExportInnovators() {
+    return this.prisma.innovatorProfile.findMany({
+      include: { projects: { select: { title: true, status: true } } },
+      orderBy: [{ displayName: "asc" }, { createdAt: "asc" }],
+    });
+  }
+
   async adminGet(id: string) {
     const project = await this.prisma.innovatorProject.findUnique({
       where: { id },

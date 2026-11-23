@@ -161,6 +161,18 @@ export interface IAdminNeedListItem {
   updatedAt: string;
 }
 
+export interface IAdminInnovatorListItem {
+  id: string;
+  displayName: string;
+  organization: string;
+  city: string;
+  phone: string;
+  email: string;
+  createdAt: string;
+  updatedAt: string;
+  projects: { title: string; status: string }[];
+}
+
 export interface IAdminProjectListItem {
   id: string;
   status: IRecordStatus;

@@ -36,6 +36,11 @@ const routes: Routes = [
         loadComponent: () => import('./modules/marketplace/features/admin-need-detail/admin-need-detail')
       },
       {
+        path: 'innovateurs',
+        title: 'Innovateurs',
+        loadComponent: () => import('./modules/innovators/innovator-list')
+      },
+      {
         path: 'projets',
         title: 'Projets',
         loadComponent: () => import('./modules/marketplace/features/admin-project-list/admin-project-list')

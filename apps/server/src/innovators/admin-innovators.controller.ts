@@ -3,7 +3,7 @@ import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Workbook } from "exceljs";
 import type { Response } from "express";
 import { AdminAuth } from "../auth/admin-auth";
-import { ApiOkData, ApiStandardErrors } from "../http/envelope";
+import { ApiStandardErrors, SkipEnvelope } from "../http/envelope";
 import { InnovatorsService } from "./innovators.service";
 
 @ApiTags("Admin")
@@ -13,6 +13,7 @@ import { InnovatorsService } from "./innovators.service";
 export class AdminInnovatorsController {
   constructor(private readonly innovators: InnovatorsService) {}
 
+  @SkipEnvelope()
   @Get("export.xlsx")
   @ApiOperation({ summary: "Exporter les coordonnées des innovateurs au format Excel" })
   async export(@Res() response: Response): Promise<void> {
@@ -66,7 +67,6 @@ export class AdminInnovatorsController {
 
   @Get()
   @ApiOperation({ summary: "Lister les profils innovateurs pour l'administration" })
-  @ApiOkData([])
   list(@Query("page") pageValue?: string, @Query("pageSize") pageSizeValue?: string) {
     const page = Math.max(1, Number.parseInt(pageValue ?? "1", 10) || 1);
     const pageSize = Math.min(100, Math.max(1, Number.parseInt(pageSizeValue ?? "20", 10) || 20));

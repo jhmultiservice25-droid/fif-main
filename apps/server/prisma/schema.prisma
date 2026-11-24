@@ -324,6 +324,7 @@ model HackademyApplication {
   @@index([teamName])
   @@index([email])
   @@index([createdAt])
+  @@unique([teamName, email])
 }
 
 model Room {

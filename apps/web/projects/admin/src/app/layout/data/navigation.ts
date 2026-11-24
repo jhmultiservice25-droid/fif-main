@@ -76,6 +76,13 @@ export const NAVIGATION: NavigationItem[] = [
         activeOptions: { exact: false }
       },
       {
+        id: 'hackademy-ctf',
+        label: 'HACKDEMY CTF',
+        icon: 'shield-check',
+        route: '/hackademy-ctf',
+        activeOptions: { exact: false }
+      },
+      {
         id: 'participants',
         label: 'Participants',
         icon: 'ticket',

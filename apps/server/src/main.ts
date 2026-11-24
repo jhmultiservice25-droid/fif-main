@@ -3,6 +3,7 @@ import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { mkdir } from "node:fs/promises";
+import { join } from "node:path";
 import { AppModule } from "./app.module";
 import { AUTH, type AppAuth } from "./auth/auth";
 import { mountDocs } from "./docs";
@@ -13,6 +14,8 @@ async function bootstrap() {
   await mkdir(process.env.UPLOAD_DIR ?? "./data/uploads", { recursive: true });
   await mkdir(SPEAKERS_UPLOAD_DIR, { recursive: true });
   await mkdir(PROFILES_UPLOAD_DIR, { recursive: true });
+  const hackademyUploadDir = join(process.env.UPLOAD_DIR ?? "./data/uploads", "hackademy");
+  await mkdir(hackademyUploadDir, { recursive: true });
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bodyParser: false,
@@ -31,6 +34,7 @@ async function bootstrap() {
 
   app.useStaticAssets(SPEAKERS_UPLOAD_DIR, { prefix: "/uploads/speakers" });
   app.useStaticAssets(PROFILES_UPLOAD_DIR, { prefix: PROFILES_URL_PREFIX });
+  app.useStaticAssets(join(process.env.UPLOAD_DIR ?? "./data/uploads", "hackademy"), { prefix: "/uploads/hackademy" });
 
   const auth = app.get<AppAuth>(AUTH);
   const { toNodeHandler } = await import("better-auth/node");

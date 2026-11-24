@@ -9,6 +9,7 @@ import { CatalogsModule } from "./catalogs/catalogs.module";
 import { EventPassModule } from "./event-passes/event-pass.module";
 import { FestivalModule } from "./festival/festival.module";
 import { HealthModule } from "./health/health.module";
+import { HackademyModule } from "./hackademy/hackademy.module";
 import { MailerModule } from "./mailer/mailer.module";
 import { ApiExceptionFilter } from "./http/exception.filter";
 import { TransformInterceptor } from "./http/transform.interceptor";
@@ -32,6 +33,7 @@ import { SpeakersModule } from "./speakers/speakers.module";
     MailerModule,
     FestivalModule,
     HealthModule,
+    HackademyModule,
     AuthModule,
     PolesModule,
     JobsModule,

@@ -7,6 +7,15 @@ import { HackademyApplicationDto } from "./hackademy.dto";
 export class HackademyService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async registrationAvailability() {
+    const now = new Date();
+    return {
+      open: now >= new Date("2026-12-10T00:00:00+01:00") && now <= new Date("2026-12-15T23:59:59+01:00"),
+      full: (await this.prisma.hackademyApplication.count()) >= 20,
+    };
+  }
+
+
   async create(dto: HackademyApplicationDto, logoPath: string) {
     const now = new Date();
     const opensAt = new Date("2026-12-10T00:00:00+01:00");
@@ -33,6 +42,9 @@ export class HackademyService {
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     } catch (error) {
       if (error instanceof ConflictException || error instanceof ForbiddenException) throw error;
+      if (error instanceof Prisma.PrismaClientKnownRequestError && (error.code === "P2002" || error.code === "P2034")) {
+        throw new ConflictException("La candidature n’a pas pu être enregistrée : vérifiez que votre équipe n’est pas déjà inscrite et réessayez.");
+      }
       throw error;
     }
   }

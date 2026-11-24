@@ -309,6 +309,23 @@ model ParticipantRegistration {
   @@index([email])
 }
 
+model HackademyApplication {
+  id         String   @id @default(cuid())
+  university  String
+  city        String
+  teamName   String
+  teamLeader String
+  whatsapp   String
+  email      String
+  memberNames String[]
+  logoPath   String
+  createdAt  DateTime @default(now())
+
+  @@index([teamName])
+  @@index([email])
+  @@index([createdAt])
+}
+
 model Room {
   id        String           @id @default(cuid())
   name      String

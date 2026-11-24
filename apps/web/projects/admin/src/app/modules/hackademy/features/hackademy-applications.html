@@ -14,7 +14,7 @@
             <th mat-header-cell *matHeaderCellDef>Équipe</th>
             <td mat-cell *matCellDef="let row">
               <div class="flex items-center gap-3 py-2">
-                <img [src]="row.logoPath" alt="Logo" class="size-12 rounded-lg object-contain" />
+                <img [src]="apiUrl + row.logoPath" alt="Logo" class="size-12 rounded-lg object-contain" />
                 <div><p class="font-semibold">{{ row.teamName }}</p><p class="text-xs text-neutral-500">{{ row.city }}</p></div>
               </div>
             </td>

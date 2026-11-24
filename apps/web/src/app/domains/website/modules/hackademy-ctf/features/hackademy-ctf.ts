@@ -12,6 +12,7 @@ export default class HackademyCtf {
   protected readonly submitted = signal(false);
   protected readonly loading = signal(false);
   protected readonly error = signal('');
+  protected readonly registrationOpen = (() => { const now = new Date(); return now >= new Date("2026-12-10T00:00:00+01:00") && now <= new Date("2026-12-15T23:59:59+01:00"); })();
 
   protected submit(event: Event): void {
     event.preventDefault();

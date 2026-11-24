@@ -2,7 +2,7 @@ import { BadRequestException, Controller, Get, Post, Body, Query, UploadedFile, 
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { diskStorage } from "multer";
-import { extname, join } from "node:path";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { AdminAuth } from "../auth/admin-auth";
 import { ApiCreatedData, ApiOkData, ApiStandardErrors } from "../http/envelope";
@@ -10,7 +10,7 @@ import { HackademyService } from "./hackademy.service";
 import { HackademyApplicationDto } from "./hackademy.dto";
 
 const uploadDir = join(process.env.UPLOAD_DIR ?? "./data/uploads", "hackademy");
-const allowedMime = ["image/jpeg", "image/png", "image/webp"];
+const extensions: Record<string, string> = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp" };
 
 @ApiTags("HACKDEMY CTF")
 @ApiStandardErrors()
@@ -26,11 +26,11 @@ export class HackademyController {
   @UseInterceptors(FileInterceptor("logo", {
     storage: diskStorage({
       destination: uploadDir,
-      filename: (_req, file, cb) => cb(null, `${randomUUID()}${extname(file.originalname).toLowerCase()}`),
+      filename: (_req, file, cb) => cb(null, `${randomUUID()}${extensions[file.mimetype]}`),
     }),
     limits: { fileSize: 2 * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
-      if (!allowedMime.includes(file.mimetype)) {
+      if (!extensions[file.mimetype]) {
         cb(new BadRequestException("Le logo doit être au format JPG, PNG ou WebP."), false);
         return;
       }

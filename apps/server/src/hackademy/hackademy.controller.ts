@@ -1,4 +1,5 @@
-import { BadRequestException, Controller, Get, Post, Body, Query, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Controller, Get, Post, Body, Query, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { unlink } from "node:fs/promises";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { diskStorage } from "multer";
@@ -8,6 +9,7 @@ import { AdminAuth } from "../auth/admin-auth";
 import { ApiCreatedData, ApiOkData, ApiStandardErrors } from "../http/envelope";
 import { HackademyService } from "./hackademy.service";
 import { HackademyApplicationDto } from "./hackademy.dto";
+import { HackademyRegistrationGuard } from "./hackademy-registration.guard";
 
 const uploadDir = join(process.env.UPLOAD_DIR ?? "./data/uploads", "hackademy");
 const extensions: Record<string, string> = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp" };
@@ -23,6 +25,7 @@ export class HackademyController {
   @ApiConsumes("multipart/form-data")
   @ApiBody({ type: HackademyApplicationDto })
   @ApiCreatedData(HackademyApplicationDto, "Candidature HACKDEMY CTF enregistrée.")
+  @UseGuards(HackademyRegistrationGuard)
   @UseInterceptors(FileInterceptor("logo", {
     storage: diskStorage({
       destination: uploadDir,
@@ -42,7 +45,12 @@ export class HackademyController {
     if (body.memberNames.some((name) => !name?.trim())) {
       throw new BadRequestException("Les noms des quatre coéquipiers sont obligatoires.");
     }
-    return this.hackademy.create(body, `/uploads/hackademy/${file.filename}`);
+    try {
+      return await this.hackademy.create(body, `/uploads/hackademy/${file.filename}`);
+    } catch (error) {
+      await unlink(file.path).catch(() => undefined);
+      throw error;
+    }
   }
 
   @AdminAuth()

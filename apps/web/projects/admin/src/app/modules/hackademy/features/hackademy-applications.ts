@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { PageEvent, MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { IApiSuccess } from '@/app/shared/interfaces';
+import { environment } from '@/environments/environment';
 
 interface IHackademyApplication {
   id: string;
@@ -31,6 +32,7 @@ interface IPage {
   imports: [MatButtonModule, MatCardModule, MatIconModule, MatPaginatorModule, MatTableModule]
 })
 export default class HackademyApplications {
+  protected readonly apiUrl = environment.apiUrl;
   protected readonly page = signal(1);
   protected readonly pageSize = signal(20);
   protected readonly displayedColumns = ['team', 'institution', 'leader', 'members', 'submitted'];

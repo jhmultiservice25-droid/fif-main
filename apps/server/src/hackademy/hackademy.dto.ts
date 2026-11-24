@@ -33,7 +33,10 @@ export class HackademyApplicationDto {
   email: string;
 
   @ApiProperty({ type: [String], minItems: 4, maxItems: 4 })
-  @Transform(({ value }) => typeof value === "string" ? JSON.parse(value) : value)
+  @Transform(({ value }) => {
+    if (typeof value !== "string") return value;
+    try { return JSON.parse(value); } catch { return []; }
+  })
   @IsArray()
   @ArrayMinSize(4)
   @ArrayMaxSize(4)

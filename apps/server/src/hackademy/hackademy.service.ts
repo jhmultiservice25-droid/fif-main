@@ -2,10 +2,11 @@ import { ConflictException, ForbiddenException, Injectable } from "@nestjs/commo
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { HackademyApplicationDto } from "./hackademy.dto";
+import { MailerService } from "../mailer/mailer.service";
 
 @Injectable()
 export class HackademyService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly mailer: MailerService) {}
 
   async registrationAvailability() {
     const now = new Date();
@@ -24,7 +25,7 @@ export class HackademyService {
       throw new ForbiddenException("Les candidatures HACKDEMY CTF seront ouvertes du 10 au 15 décembre 2026.");
     }
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      const application = await this.prisma.$transaction(async (tx) => {
         const count = await tx.hackademyApplication.count();
         if (count >= 20) throw new ConflictException("Les 20 places d'équipe disponibles sont déjà attribuées.");
         return tx.hackademyApplication.create({
@@ -40,6 +41,8 @@ export class HackademyService {
           },
         });
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      await this.sendApplicationReceipt(application);
+      return application;
     } catch (error) {
       if (error instanceof ConflictException || error instanceof ForbiddenException) throw error;
       if (error instanceof Prisma.PrismaClientKnownRequestError && (error.code === "P2002" || error.code === "P2034")) {
@@ -48,6 +51,33 @@ export class HackademyService {
       throw error;
     }
   }
+
+  private async sendApplicationReceipt(application: { teamName: string; teamLeader: string; email: string; university: string; city: string }) {
+    try {
+      await this.mailer.compose({
+        to: application.email,
+        name: application.teamLeader,
+        subject: "Candidature HACKDEMY CTF 2026 reçue",
+        preheader: "Nous avons bien reçu le dossier de votre équipe.",
+        title: "Votre candidature a bien été reçue",
+        intro: [
+          "Nous confirmons la réception de votre dossier de candidature au HACKDEMY CTF 2026. Il est maintenant en attente de vérification et de validation par le comité d’organisation. Cet e-mail ne vaut pas confirmation de sélection.",
+          "Le comité pourra vous recontacter via le chef d’équipe avant les qualifications. Merci de vérifier que vos coordonnées WhatsApp et e-mail restent accessibles.",
+        ],
+        details: [
+          { label: "Équipe", value: application.teamName },
+          { label: "Université / institut", value: application.university },
+          { label: "Ville", value: application.city },
+        ],
+        actions: [{ label: "Consulter HACKDEMY CTF 2026", url: `${process.env.WEBSITE_ORIGIN ?? "https://festival.fikiri.co"}/hackademy-ctf`, primary: true }],
+        outro: "Bonne chance à votre équipe !",
+        footerNote: "Cet e-mail confirme uniquement la réception de votre candidature au HACKDEMY CTF 2026.",
+      });
+    } catch {
+      // A failed confirmation email must not invalidate a successfully stored application.
+    }
+  }
+
 
   async adminList(page = 1, pageSize = 20) {
     const safePage = Math.max(1, page);

@@ -11,6 +11,11 @@ const routes: Routes = [
         loadChildren: () => import('./modules/landing/routes')
       },
       {
+        path: 'hackademy-ctf',
+        data: { hasHero: false },
+        loadChildren: () => import('./modules/hackademy-ctf/routes')
+      },
+      {
         path: 'applications',
         loadChildren: () => import('./modules/applications/routes')
       },

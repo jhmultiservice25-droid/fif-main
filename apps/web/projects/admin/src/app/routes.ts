@@ -15,6 +15,11 @@ const routes: Routes = [
         loadComponent: () => import('./modules/stats/features/stats')
       },
       {
+        path: 'hackademy-ctf',
+        title: 'HACKDEMY CTF 2026',
+        loadComponent: () => import('./modules/hackademy/features/hackademy-applications')
+      },
+      {
         path: 'applications',
         title: 'Candidatures',
         loadComponent: () => import('./modules/applications/features/application-list/application-list')

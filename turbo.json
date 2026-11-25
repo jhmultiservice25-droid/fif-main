@@ -10,6 +10,12 @@
         "dist/**"
       ]
     },
+    "server#build": {
+      "cache": false
+    },
+    "server#typecheck": {
+      "cache": false
+    },
     "lint": {},
     "typecheck": {},
     "dev:admin": {
